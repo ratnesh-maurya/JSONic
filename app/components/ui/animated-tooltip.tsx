@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+
 import { motion } from "framer-motion";
 import { useState } from "react";
 
@@ -20,7 +20,7 @@ export const AnimatedTooltip = ({
 
     return (
         <div className="flex flex-row items-center justify-center mb-10 w-full">
-            {items.map((item, idx) => (
+            {items.map((item) => (
                 <div
                     className="relative group block"
                     key={item.name}

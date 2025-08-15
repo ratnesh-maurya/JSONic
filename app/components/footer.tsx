@@ -21,7 +21,7 @@ export const Footer = () => {
                                 href="https://www.ratnesh-maurya.com/"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-blue-400 hover:text-blue-300 transition-colors font-medium"
+                                className="text-blue-400 hover:text-blue-300 transition-colors font-medium cursor-pointer"
                             >
                                 Ratnesh Maurya
                             </a>
@@ -31,7 +31,7 @@ export const Footer = () => {
                                 href="https://github.com/ratnesh-maurya"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-gray-400 hover:text-white transition-colors"
+                                className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                             >
                                 GitHub
                             </a>
@@ -39,7 +39,7 @@ export const Footer = () => {
                                 href="https://x.com/ratnesh_maurya_"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-gray-400 hover:text-white transition-colors"
+                                className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                             >
                                 Twitter
                             </a>
@@ -47,7 +47,7 @@ export const Footer = () => {
                                 href="https://www.ratnesh-maurya.com/"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-gray-400 hover:text-white transition-colors"
+                                className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                             >
                                 Portfolio
                             </a>

@@ -9,7 +9,7 @@ export interface ToastHandles {
     show: (message: string, type?: ToastType, duration?: number) => void;
 }
 
-const Toast = forwardRef<ToastHandles, {}>((props, ref) => {
+const Toast = forwardRef<ToastHandles, Record<string, never>>((props, ref) => {
     const [visible, setVisible] = useState(false);
     const [message, setMessage] = useState('');
     const [type, setType] = useState<ToastType>('success');

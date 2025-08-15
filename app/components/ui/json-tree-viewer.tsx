@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "./toast-provider";
 
 interface TreeNodeProps {
-    data: any;
+    data: unknown;
     path: string;
     level: number;
     isExpanded: (path: string) => boolean;
@@ -25,18 +25,18 @@ const TreeNode = ({ data, path, level, isExpanded, onToggle }: TreeNodeProps) =>
         try {
             await navigator.clipboard.writeText(text);
             showToast(message, 'success', 2500);
-        } catch (error) {
+        } catch (_error) {
             showToast("Failed to copy to clipboard", 'error', 3000);
         }
     };
 
-    const getValueDisplay = (value: any) => {
+    const getValueDisplay = (value: unknown) => {
         if (typeof value === "string") return `"${value}"`;
         if (value === null) return "null";
         return String(value);
     };
 
-    const getValueColor = (value: any) => {
+    const getValueColor = (value: unknown) => {
         if (typeof value === "string") return "text-emerald-400";
         if (typeof value === "number") return "text-blue-400 font-medium";
         if (typeof value === "boolean") return "text-purple-400 font-bold";
@@ -83,7 +83,7 @@ const TreeNode = ({ data, path, level, isExpanded, onToggle }: TreeNodeProps) =>
                                         e.stopPropagation();
                                         copyToClipboard(JSON.stringify(data, null, 2), "Value copied!");
                                     }}
-                                    className="px-2 py-0.5 text-xs rounded hover:bg-gray-600/50 bg-gray-700/50 border border-gray-600/50 transition-colors"
+                                    className="px-2 py-0.5 text-xs rounded hover:bg-gray-600/50 bg-gray-700/50 border border-gray-600/50 transition-colors cursor-pointer"
                                     title="Copy value"
                                 >
                                     Copy
@@ -97,7 +97,7 @@ const TreeNode = ({ data, path, level, isExpanded, onToggle }: TreeNodeProps) =>
                     <div className="ml-4 border-l-2 border-gray-700/50 pl-4 mt-1">
                         {Object.entries(data).map(([key, value]) => (
                             <div key={`${path}.${key}`} className="flex items-start my-1 group/item">
-                                <span className="text-cyan-300 font-medium mr-2 text-xs select-none">"{key}"</span>
+                                <span className="text-cyan-300 font-medium mr-2 text-xs select-none">&quot;{key}&quot;</span>
                                 <span className="text-gray-300 mr-2 font-bold select-none">:</span>
                                 <div className="flex-1">
                                     <TreeNode
@@ -138,7 +138,7 @@ const TreeNode = ({ data, path, level, isExpanded, onToggle }: TreeNodeProps) =>
                     >
                         <button
                             onClick={() => copyToClipboard(path, "JSONPath copied!")}
-                            className="px-2 py-0.5 text-xs rounded hover:bg-gray-600/50 bg-gray-700/50 border border-gray-600/50"
+                            className="px-2 py-0.5 text-xs rounded hover:bg-gray-600/50 bg-gray-700/50 border border-gray-600/50 cursor-pointer"
                             title="Copy path"
                         >
                             Path

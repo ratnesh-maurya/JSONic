@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SparklesCore } from "./components/ui/sparkles";
+
 import { BackgroundBeamsWithCollision } from "./components/ui/aurora-background";
 import { JSONHighlighter } from "./components/ui/json-highlighter";
 import { JSONTreeViewer } from "./components/ui/json-tree-viewer";
 import { JSONComparer } from "./components/ui/json-comparer";
 import { TextareaWithLineNumbers } from "./components/ui/textarea-with-line-numbers";
 import { Footer } from "./components/footer";
+import { StructuredData } from "./components/structured-data";
 import { motion } from "framer-motion";
 import { useToast } from "./components/ui/toast-provider";
 
@@ -20,7 +21,7 @@ export default function Home() {
     try {
       await navigator.clipboard.writeText(text);
       showToast(message, 'success', 2500);
-    } catch (error) {
+    } catch (_error) {
       showToast("Failed to copy to clipboard", 'error', 3000);
     }
   };
@@ -64,7 +65,7 @@ export default function Home() {
   const formatJson = () => {
     try {
       // Auto-fix common JSON issues
-      let fixedInput = jsonInput
+      const fixedInput = jsonInput
         .replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3') // Add quotes to unquoted keys
         .replace(/:\s*'([^']*)'/g, ': "$1"') // Replace single quotes with double quotes
         .replace(/,\s*}/g, '}') // Remove trailing commas in objects
@@ -86,10 +87,10 @@ export default function Home() {
       if (fixedInput !== jsonInput) {
         setJsonInput(fixedInput);
       }
-    } catch (error) {
+    } catch (_error) {
       setIsValid(false);
       setFormattedJson("");
-      setErrorMessage(error instanceof Error ? error.message : "Invalid JSON");
+      setErrorMessage(_error instanceof Error ? _error.message : "Invalid JSON");
       setIsErrorVisible(true);
       // Find error position
       const position = findErrorPosition(jsonInput);
@@ -97,7 +98,7 @@ export default function Home() {
     }
   };
 
-  const sortObjectKeys = (obj: any): any => {
+  const sortObjectKeys = (obj: unknown): unknown => {
     if (typeof obj !== 'object' || obj === null) {
       return obj;
     }
@@ -106,12 +107,12 @@ export default function Home() {
       return obj.map(sortObjectKeys);
     }
 
-    return Object.keys(obj)
+    return Object.keys(obj as Record<string, unknown>)
       .sort()
       .reduce((result, key) => {
-        result[key] = sortObjectKeys(obj[key]);
+        (result as Record<string, unknown>)[key] = sortObjectKeys((obj as Record<string, unknown>)[key]);
         return result;
-      }, {} as { [key: string]: any });
+      }, {} as Record<string, unknown>);
   };
 
   const compressJson = () => {
@@ -163,7 +164,7 @@ export default function Home() {
     }
   };
 
-  const generateValidationSuggestions = (jsonString: string, parsed: any): string[] => {
+  const generateValidationSuggestions = (jsonString: string, parsed: unknown): string[] => {
     const suggestions = [];
 
     // Check for potential improvements
@@ -230,10 +231,10 @@ export default function Home() {
     }
   };
 
-  const calculateTreeStats = (obj: any, depth = 0): { nodes: number; depth: number; size: number } => {
+  const calculateTreeStats = (obj: unknown, depth = 0): { nodes: number; depth: number; size: number } => {
     let nodes = 1;
     let maxDepth = depth;
-    let size = JSON.stringify(obj).length;
+    const size = JSON.stringify(obj).length;
 
     if (typeof obj === 'object' && obj !== null) {
       if (Array.isArray(obj)) {
@@ -254,9 +255,9 @@ export default function Home() {
     return { nodes, depth: maxDepth, size };
   };
 
-  const evaluateJsonPath = () => {
+  const evaluateJsonPath = async () => {
     try {
-      const jp = require('jsonpath');
+      const jp = await import('jsonpath');
       const parsed = JSON.parse(jsonInput);
       const result = jp.query(parsed, jsonPathQuery);
       setJsonPathResult(JSON.stringify(result, null, 2));
@@ -277,7 +278,7 @@ export default function Home() {
     }
   };
 
-  const jsonToTypes = (obj: any, name: string): string => {
+  const jsonToTypes = (obj: unknown, name: string): string => {
     if (typeof obj !== 'object' || obj === null) {
       return `type ${name} = ${typeof obj};`;
     }
@@ -289,14 +290,9 @@ export default function Home() {
       return `type ${name} = ${jsonToTypes(obj[0], name + "Item")}[];`;
     }
 
-    const keys = Object.keys(obj);
-    const interfaceBody = keys.map(key => {
-      const value = obj[key];
-      const type = jsonToTypes(value, capitalize(key));
-      return `  ${key}: ${capitalize(key)};\n${type}`;
-    }).join('\n');
+    const keys = Object.keys(obj as Record<string, unknown>);
 
-    return `interface ${name} {\n${keys.map(key => `  ${key}: ${capitalize(key)};`).join('\n')}\n}\n\n${keys.map(key => jsonToTypes(obj[key], capitalize(key))).join('\n')}`;
+    return `interface ${name} {\n${keys.map(key => `  ${key}: ${capitalize(key)};`).join('\n')}\n}\n\n${keys.map(key => jsonToTypes((obj as Record<string, unknown>)[key], capitalize(key))).join('\n')}`;
   };
 
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -305,7 +301,7 @@ export default function Home() {
     try {
       JSON.parse(jsonString);
       return { line: 0, column: 0 };
-    } catch (error) {
+    } catch (_error) {
       const lines = jsonString.split('\n');
       let currentPos = 0;
 
@@ -422,7 +418,7 @@ export default function Home() {
             </div>
             <button
               onClick={() => setIsErrorVisible(false)}
-              className="absolute top-2 right-2 text-red-300 hover:text-white transition-colors"
+              className="absolute top-2 right-2 text-red-300 hover:text-white transition-colors cursor-pointer"
             >
               &#x2715;
             </button>
@@ -441,13 +437,13 @@ export default function Home() {
                           setJsonInput('{"user":{"name":"John Doe","age":30,"address":{"street":"123 Main St","city":"New York"},"hobbies":["reading","swimming","coding"],"active":true}}');
                           analyzeJsonTree('{"user":{"name":"John Doe","age":30,"address":{"street":"123 Main St","city":"New York"},"hobbies":["reading","swimming","coding"],"active":true}}');
                         }}
-                        className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-gray-700/50"
+                        className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-gray-700/50 cursor-pointer"
                       >
                         Load Sample
                       </button>
                       <button
                         onClick={() => analyzeJsonTree(jsonInput)}
-                        className="px-4 py-2 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-green-700/50"
+                        className="px-4 py-2 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
                       >
                         Analyze Tree
                       </button>
@@ -465,7 +461,7 @@ export default function Home() {
                         </span>
                         <button
                           onClick={() => copyToClipboard(`Tree Analysis: ${treeStats.nodes} nodes, ${treeStats.depth} levels deep, ${(treeStats.size / 1024).toFixed(1)}KB`, "Tree stats copied!")}
-                          className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50"
+                          className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
                         >
                           Copy Stats
                         </button>
@@ -513,7 +509,7 @@ export default function Home() {
                     <div className="flex justify-center space-x-2 mb-4">
                       <button
                         onClick={() => setViewMode("text")}
-                        className={`px-4 py-2 rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border ${viewMode === "text"
+                        className={`px-4 py-2 rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border cursor-pointer ${viewMode === "text"
                           ? "bg-blue-600/50 text-white border-blue-700/50"
                           : "bg-gray-600/50 text-gray-300 border-gray-700/50"
                           }`}
@@ -522,7 +518,7 @@ export default function Home() {
                       </button>
                       <button
                         onClick={() => setViewMode("tree")}
-                        className={`px-4 py-2 rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border ${viewMode === "tree"
+                        className={`px-4 py-2 rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border cursor-pointer ${viewMode === "tree"
                           ? "bg-blue-600/50 text-white border-blue-700/50"
                           : "bg-gray-600/50 text-gray-300 border-gray-700/50"
                           }`}
@@ -561,19 +557,19 @@ export default function Home() {
                     <div className="flex space-x-2">
                       <button
                         onClick={loadSampleJson}
-                        className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-gray-700/50"
+                        className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-gray-700/50 cursor-pointer"
                       >
                         Load Sample
                       </button>
                       <button
                         onClick={formatJson}
-                        className="px-4 py-2 bg-blue-600/50 hover:bg-blue-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-blue-700/50"
+                        className="px-4 py-2 bg-blue-600/50 hover:bg-blue-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-blue-700/50 cursor-pointer"
                       >
                         Format JSON
                       </button>
                       <button
                         onClick={clearAll}
-                        className="px-4 py-2 bg-red-600/50 hover:bg-red-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-red-700/50"
+                        className="px-4 py-2 bg-red-600/50 hover:bg-red-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-red-700/50 cursor-pointer"
                       >
                         Clear
                       </button>
@@ -600,7 +596,7 @@ export default function Home() {
                               </span>
                               <button
                                 onClick={() => copyToClipboard(formattedJson, "Formatted JSON copied!")}
-                                className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50"
+                                className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
                               >
                                 Copy
                               </button>
@@ -644,19 +640,19 @@ export default function Home() {
                     <div className="flex space-x-2">
                       <button
                         onClick={loadSampleJson}
-                        className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-gray-700/50"
+                        className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-gray-700/50 cursor-pointer"
                       >
                         Load Sample
                       </button>
                       <button
                         onClick={validateJson}
-                        className="px-4 py-2 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-green-700/50"
+                        className="px-4 py-2 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
                       >
                         Validate JSON
                       </button>
                       <button
                         onClick={clearAll}
-                        className="px-4 py-2 bg-red-600/50 hover:bg-red-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-red-700/50"
+                        className="px-4 py-2 bg-red-600/50 hover:bg-red-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-red-700/50 cursor-pointer"
                       >
                         Clear
                       </button>
@@ -680,7 +676,7 @@ export default function Home() {
                         {isValid && (
                           <button
                             onClick={() => copyToClipboard("✅ Valid JSON", "Validation result copied!")}
-                            className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50"
+                            className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
                           >
                             Copy Result
                           </button>
@@ -737,19 +733,19 @@ export default function Home() {
                     <div className="flex space-x-2">
                       <button
                         onClick={loadSampleJson}
-                        className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-gray-700/50"
+                        className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-gray-700/50 cursor-pointer"
                       >
                         Load Sample
                       </button>
                       <button
                         onClick={compressJson}
-                        className="px-4 py-2 bg-purple-600/50 hover:bg-purple-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-purple-700/50"
+                        className="px-4 py-2 bg-purple-600/50 hover:bg-purple-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-purple-700/50 cursor-pointer"
                       >
                         Compress JSON
                       </button>
                       <button
                         onClick={clearAll}
-                        className="px-4 py-2 bg-red-600/50 hover:bg-red-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-red-700/50"
+                        className="px-4 py-2 bg-red-600/50 hover:bg-red-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-red-700/50 cursor-pointer"
                       >
                         Clear
                       </button>
@@ -779,7 +775,7 @@ export default function Home() {
                               </span>
                               <button
                                 onClick={() => copyToClipboard(formattedJson, "Compressed JSON copied!")}
-                                className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50"
+                                className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
                               >
                                 Copy
                               </button>
@@ -812,13 +808,13 @@ export default function Home() {
                     <div className="flex space-x-2">
                       <button
                         onClick={loadSampleComparison}
-                        className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-gray-700/50"
+                        className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-gray-700/50 cursor-pointer"
                       >
                         Load Sample
                       </button>
                       <button
                         onClick={clearComparison}
-                        className="px-4 py-2 bg-red-600/50 hover:bg-red-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-red-700/50"
+                        className="px-4 py-2 bg-red-600/50 hover:bg-red-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-red-700/50 cursor-pointer"
                       >
                         Clear
                       </button>
@@ -832,7 +828,7 @@ export default function Home() {
                         {json1 && (
                           <button
                             onClick={() => copyToClipboard(json1, "JSON 1 copied!")}
-                            className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50"
+                            className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
                           >
                             Copy
                           </button>
@@ -851,7 +847,7 @@ export default function Home() {
                         {json2 && (
                           <button
                             onClick={() => copyToClipboard(json2, "JSON 2 copied!")}
-                            className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50"
+                            className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
                           >
                             Copy
                           </button>
@@ -901,7 +897,7 @@ export default function Home() {
                     />
                     <button
                       onClick={evaluateJsonPath}
-                      className="px-4 py-2 bg-blue-600/50 hover:bg-blue-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-blue-700/50"
+                      className="px-4 py-2 bg-blue-600/50 hover:bg-blue-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-blue-700/50 cursor-pointer"
                     >
                       Evaluate
                     </button>
@@ -922,7 +918,7 @@ export default function Home() {
                         {jsonPathResult && (
                           <button
                             onClick={() => copyToClipboard(jsonPathResult, "JSONPath result copied!")}
-                            className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50"
+                            className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
                           >
                             Copy Result
                           </button>
@@ -967,7 +963,7 @@ export default function Home() {
                         {typesResult && (
                           <button
                             onClick={() => copyToClipboard(typesResult, "TypeScript types copied!")}
-                            className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50"
+                            className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
                           >
                             Copy Types
                           </button>
@@ -992,118 +988,121 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen relative">
-      <BackgroundBeamsWithCollision className="absolute inset-0">
-        <div></div>
-      </BackgroundBeamsWithCollision>
-      <div className="relative z-10 min-h-screen flex flex-col w-full">
-        {/* Header */}
-        <header className="py-4 md:py-6 px-4 relative">
-          {/* GitHub Icon - Top Right */}
-          <div className="absolute top-4 right-4 z-10">
-            <a
-              href="https://github.com/ratnesh-maurya/JSONic"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center w-10 h-10 bg-gray-800/50 hover:bg-gray-700/70 border border-gray-700/50 rounded-full transition-all duration-200 backdrop-blur-sm group"
-              title="View on GitHub"
-            >
-              <svg
-                className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors duration-200"
-                fill="currentColor"
-                viewBox="0 0 24 24"
+    <>
+      <StructuredData />
+      <div className="min-h-screen relative">
+        <BackgroundBeamsWithCollision className="absolute inset-0">
+          <div></div>
+        </BackgroundBeamsWithCollision>
+        <div className="relative z-10 min-h-screen flex flex-col w-full">
+          {/* Header */}
+          <header className="py-4 md:py-6 px-4 relative">
+            {/* GitHub Icon - Top Right */}
+            <div className="absolute top-4 right-4 z-10">
+              <a
+                href="https://github.com/ratnesh-maurya/JSONic"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center w-10 h-10 bg-gray-800/50 hover:bg-gray-700/70 border border-gray-700/50 rounded-full transition-all duration-200 backdrop-blur-sm group cursor-pointer"
+                title="View on GitHub"
               >
-                <path d="M12 0C5.374 0 0 5.373 0 12 0 17.302 3.438 21.8 8.207 23.387c.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.300 24 12c0-6.627-5.373-12-12-12z" />
-              </svg>
-            </a>
-          </div>
+                <svg
+                  className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors duration-200"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 0C5.374 0 0 5.373 0 12 0 17.302 3.438 21.8 8.207 23.387c.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.300 24 12c0-6.627-5.373-12-12-12z" />
+                </svg>
+              </a>
+            </div>
 
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col items-center justify-center mb-4">
-              <div className="flex items-center space-x-3 mb-4">
-                <span className="text-2xl md:text-3xl">🔮</span>
-                <h1 className="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-                  JSONic
-                </h1>
+            <div className="max-w-7xl mx-auto">
+              <div className="flex flex-col items-center justify-center mb-4">
+                <div className="flex items-center space-x-3 mb-4 cursor-pointer">
+                  <span className="text-2xl md:text-3xl">🔮</span>
+                  <h1 className="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                    JSONic
+                  </h1>
+                </div>
+                <nav className="hidden md:flex items-center space-x-2 bg-gray-800/0 border border-gray-700/10 p-2 rounded-full shadow-lg backdrop-blur-none">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${activeTab === tab.id
+                        ? 'text-white'
+                        : 'text-gray-400 hover:text-gray-200'
+                        }`}
+                    >
+                      {activeTab === tab.id && (
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-r from-blue-600/50 to-purple-600/50 rounded-full"
+                          layoutId="activeTab"
+                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                        />
+                      )}
+                      <span className="relative z-10 flex items-center space-x-2">
+                        <span>{tab.icon}</span>
+                        <span>{tab.name}</span>
+                      </span>
+                    </button>
+                  ))}
+                </nav>
               </div>
-              <nav className="hidden md:flex items-center space-x-2 bg-gray-800/0 border border-gray-700/10 p-2 rounded-full shadow-lg backdrop-blur-none">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${activeTab === tab.id
-                      ? 'text-white'
-                      : 'text-gray-400 hover:text-gray-200'
-                      }`}
-                  >
-                    {activeTab === tab.id && (
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-blue-600/50 to-purple-600/50 rounded-full"
-                        layoutId="activeTab"
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                      />
-                    )}
-                    <span className="relative z-10 flex items-center space-x-2">
-                      <span>{tab.icon}</span>
-                      <span>{tab.name}</span>
-                    </span>
-                  </button>
-                ))}
-              </nav>
-            </div>
-            <div className="text-center">
-              <motion.p
-                className="text-gray-400 text-sm md:text-base font-medium max-w-3xl mx-auto px-2"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-              >
-                A lightweight and powerful utility designed to simplify working with JSON data.
-                <span className="hidden md:inline"> Format, validate, compare, and transform JSON with ease.</span>
-              </motion.p>
-            </div>
-          </div>
-        </header>
-
-        {/* Mobile Navigation */}
-        <div className="md:hidden px-4 pb-4">
-          <div className="max-w-7xl mx-auto">
-            <div className="bg-gray-800/0 border border-gray-700/10 rounded-xl p-2 backdrop-blur-none">
-              <div className="grid grid-cols-2 gap-1">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`relative px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${activeTab === tab.id
-                      ? 'text-white bg-gradient-to-r from-blue-600/50 to-purple-600/50'
-                      : 'text-gray-400 hover:text-gray-200'
-                      }`}
-                  >
-                    <span className="flex items-center justify-center space-x-1">
-                      <span className="text-sm">{tab.icon}</span>
-                      <span className="truncate">{tab.name}</span>
-                    </span>
-                  </button>
-                ))}
+              <div className="text-center">
+                <motion.p
+                  className="text-gray-400 text-sm md:text-base font-medium max-w-3xl mx-auto px-2"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                >
+                  A lightweight and powerful utility designed to simplify working with JSON data.
+                  <span className="hidden md:inline"> Format, validate, compare, and transform JSON with ease.</span>
+                </motion.p>
               </div>
             </div>
+          </header>
+
+          {/* Mobile Navigation */}
+          <div className="md:hidden px-4 pb-4">
+            <div className="max-w-7xl mx-auto">
+              <div className="bg-gray-800/0 border border-gray-700/10 rounded-xl p-2 backdrop-blur-none">
+                <div className="grid grid-cols-2 gap-1">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`relative px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${activeTab === tab.id
+                        ? 'text-white bg-gradient-to-r from-blue-600/50 to-purple-600/50'
+                        : 'text-gray-400 hover:text-gray-200'
+                        }`}
+                    >
+                      <span className="flex items-center justify-center space-x-1">
+                        <span className="text-sm">{tab.icon}</span>
+                        <span className="truncate">{tab.name}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* Main Content */}
+          <main className="flex-grow py-4 md:py-8 px-4">
+            <div className="max-w-7xl mx-auto">
+              <div className="bg-gray-900/0 border border-gray-700/10 rounded-xl md:rounded-3xl p-4 md:p-8 backdrop-blur-none shadow-2xl">
+                {/* Tool Content */}
+                {renderToolContent()}
+              </div>
+            </div>
+          </main>
+
+          {/* Footer */}
+          <Footer />
         </div>
-
-        {/* Main Content */}
-        <main className="flex-grow py-4 md:py-8 px-4">
-          <div className="max-w-7xl mx-auto">
-            <div className="bg-gray-900/0 border border-gray-700/10 rounded-xl md:rounded-3xl p-4 md:p-8 backdrop-blur-none shadow-2xl">
-              {/* Tool Content */}
-              {renderToolContent()}
-            </div>
-          </div>
-        </main>
-
-        {/* Footer */}
-        <Footer />
       </div>
-    </div>
+    </>
 
   );
 }

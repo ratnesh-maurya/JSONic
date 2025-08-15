@@ -10,12 +10,7 @@ interface JSONComparerProps {
     className?: string;
 }
 
-interface DiffResult {
-    type: 'added' | 'removed' | 'modified' | 'unchanged';
-    path: string;
-    value1?: any;
-    value2?: any;
-}
+
 
 export const JSONComparer = ({ json1, json2, className }: JSONComparerProps) => {
     const [smartCompare, setSmartCompare] = useState(true);
@@ -26,13 +21,13 @@ export const JSONComparer = ({ json1, json2, className }: JSONComparerProps) => 
             let obj1 = JSON.parse(json1);
             let obj2 = JSON.parse(json2);
 
-            const sortObject = (obj: any): any => {
+            const sortObject = (obj: unknown): unknown => {
                 if (typeof obj !== 'object' || obj === null) return obj;
                 if (Array.isArray(obj)) return obj.map(sortObject).sort();
-                return Object.keys(obj).sort().reduce((result, key) => {
-                    result[key] = sortObject(obj[key]);
+                return Object.keys(obj as Record<string, unknown>).sort().reduce((result, key) => {
+                    (result as Record<string, unknown>)[key] = sortObject((obj as Record<string, unknown>)[key]);
                     return result;
-                }, {} as { [key: string]: any });
+                }, {} as Record<string, unknown>);
             };
 
             if (smartCompare) {
@@ -65,7 +60,7 @@ export const JSONComparer = ({ json1, json2, className }: JSONComparerProps) => 
                 <div className="flex items-center space-x-2">
                     <button
                         onClick={() => setViewMode("diff")}
-                        className={`px-3 py-1 rounded text-sm transition-all duration-200 ${viewMode === "diff"
+                        className={`px-3 py-1 rounded text-sm transition-all duration-200 cursor-pointer ${viewMode === "diff"
                             ? "bg-blue-600/50 text-white border border-blue-500/50"
                             : "bg-gray-700/50 text-gray-300 border border-gray-600/50"
                             }`}
@@ -74,7 +69,7 @@ export const JSONComparer = ({ json1, json2, className }: JSONComparerProps) => 
                     </button>
                     <button
                         onClick={() => setViewMode("tree")}
-                        className={`px-3 py-1 rounded text-sm transition-all duration-200 ${viewMode === "tree"
+                        className={`px-3 py-1 rounded text-sm transition-all duration-200 cursor-pointer ${viewMode === "tree"
                             ? "bg-blue-600/50 text-white border border-blue-500/50"
                             : "bg-gray-700/50 text-gray-300 border border-gray-600/50"
                             }`}

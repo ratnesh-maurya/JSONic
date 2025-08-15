@@ -75,7 +75,7 @@ export const CardItem = ({
     rotateZ = 0,
     ...rest
 }: {
-    as?: any;
+    as?: React.ElementType;
     children: React.ReactNode;
     className?: string;
     translateX?: number | string;
@@ -84,7 +84,7 @@ export const CardItem = ({
     rotateX?: number | string;
     rotateY?: number | string;
     rotateZ?: number | string;
-    [key: string]: any;
+    [key: string]: unknown;
 }) => {
     const ref = useRef<HTMLDivElement>(null);
     const { mouseX, mouseY } = useContext(MouseEnterContext);

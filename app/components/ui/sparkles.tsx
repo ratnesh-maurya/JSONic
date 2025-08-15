@@ -19,8 +19,8 @@ export const SparklesCore = ({
     id?: string;
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const particlesRef = useRef<any[]>([]);
-    const animationFrameRef = useRef<number>();
+    const particlesRef = useRef<Array<{ x: number; y: number; size: number; speedX: number; speedY: number; opacity: number }>>([]);
+    const animationFrameRef = useRef<number | null>(null);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -40,7 +40,7 @@ export const SparklesCore = ({
         window.addEventListener("resize", resizeCanvas);
 
         // Create particles
-        const particles: any[] = [];
+        const particles: Array<{ x: number; y: number; size: number; speedX: number; speedY: number; opacity: number }> = [];
 
         for (let i = 0; i < particleDensity; i++) {
             particles.push({

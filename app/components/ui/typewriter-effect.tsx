@@ -16,7 +16,7 @@ export const TypewriterEffect = ({
     cursorClassName?: string;
 }) => {
     const [scope, animate] = useAnimate();
-    let wordsArray = words.map((word, idx) => {
+    const wordsArray = words.map((word, idx) => {
         return {
             ...word,
             id: idx,
