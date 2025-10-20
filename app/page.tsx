@@ -11,18 +11,30 @@ import { Footer } from "./components/footer";
 import { StructuredData } from "./components/structured-data";
 import { motion } from "framer-motion";
 import { useToast } from "./components/ui/toast-provider";
+import { ResizableContainer } from "./components/ui/resizable-panel";
+import {
+  trackJsonFormat,
+  trackJsonValidation,
+  trackTreeAnalysis,
+  trackCopyToClipboard,
+  trackSampleLoaded,
+  trackToolSwitch,
+  trackError,
+} from "@/lib/analytics";
 
 export default function Home() {
   const { showToast } = useToast();
   const [jsonInput, setJsonInput] = useState("");
 
   // Helper function for copying with toast notification
-  const copyToClipboard = async (text: string, message: string = "Copied to clipboard!") => {
+  const copyToClipboard = async (text: string, message: string = "Copied to clipboard!", contentType: string = "text") => {
     try {
       await navigator.clipboard.writeText(text);
       showToast(message, 'success', 2500);
+      trackCopyToClipboard(contentType);
     } catch (_error) {
       showToast("Failed to copy to clipboard", 'error', 3000);
+      trackError("copy_to_clipboard_error", _error instanceof Error ? _error.message : "Unknown error");
     }
   };
   const [formattedJson, setFormattedJson] = useState("");
@@ -77,11 +89,15 @@ export default function Home() {
         parsed = sortObjectKeys(parsed);
       }
 
-      setFormattedJson(JSON.stringify(parsed, null, indentSize));
+      const formatted = JSON.stringify(parsed, null, indentSize);
+      setFormattedJson(formatted);
       setIsValid(true);
       setErrorMessage("");
       setErrorPosition(null);
       setIsErrorVisible(false);
+
+      // Track the formatting action
+      trackJsonFormat(jsonInput.length, formatted.length);
 
       // Update input if auto-fix was applied
       if (fixedInput !== jsonInput) {
@@ -90,11 +106,15 @@ export default function Home() {
     } catch (_error) {
       setIsValid(false);
       setFormattedJson("");
-      setErrorMessage(_error instanceof Error ? _error.message : "Invalid JSON");
+      const errorMsg = _error instanceof Error ? _error.message : "Invalid JSON";
+      setErrorMessage(errorMsg);
       setIsErrorVisible(true);
       // Find error position
       const position = findErrorPosition(jsonInput);
       setErrorPosition(position);
+
+      // Track the error
+      trackError("json_format_error", errorMsg);
     }
   };
 
@@ -149,6 +169,9 @@ export default function Home() {
       // Generate intelligent suggestions
       const suggestions = generateValidationSuggestions(jsonInput, parsed);
       setValidationSuggestions(suggestions);
+
+      // Track successful validation
+      trackJsonValidation(true);
     } catch (error) {
       setIsValid(false);
       setFormattedJson("❌ Invalid JSON");
@@ -161,6 +184,9 @@ export default function Home() {
       // Generate fix suggestions
       const fixSuggestions = generateFixSuggestions(jsonInput, errorMsg);
       setValidationSuggestions(fixSuggestions);
+
+      // Track validation failure
+      trackJsonValidation(false, errorMsg);
     }
   };
 
@@ -226,8 +252,12 @@ export default function Home() {
       const parsed = JSON.parse(jsonString);
       const stats = calculateTreeStats(parsed);
       setTreeStats(stats);
-    } catch {
+
+      // Track tree analysis
+      trackTreeAnalysis(stats.nodes, stats.depth, stats.size);
+    } catch (error) {
       setTreeStats({ nodes: 0, depth: 0, size: 0 });
+      trackError("tree_analysis_error", error instanceof Error ? error.message : "Unknown error");
     }
   };
 
@@ -301,7 +331,7 @@ export default function Home() {
     try {
       JSON.parse(jsonString);
       return { line: 0, column: 0 };
-    } catch (_error) {
+    } catch {
       const lines = jsonString.split('\n');
       let currentPos = 0;
 
@@ -358,6 +388,9 @@ export default function Home() {
     setErrorMessage("");
     setErrorPosition(null);
     setIsErrorVisible(false);
+
+    // Track sample loaded
+    trackSampleLoaded("user_profile");
   };
 
   const loadSampleComparison = () => {
@@ -390,6 +423,9 @@ export default function Home() {
 
     setJson1(JSON.stringify(sample1, null, 2));
     setJson2(JSON.stringify(sample2, null, 2));
+
+    // Track sample loaded
+    trackSampleLoaded("comparison");
   };
 
   const tabs = [
@@ -468,35 +504,44 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">Input JSON</label>
-                      <textarea
-                        value={jsonInput}
-                        onChange={(e) => {
-                          setJsonInput(e.target.value);
-                          if (e.target.value) {
-                            analyzeJsonTree(e.target.value);
-                          }
-                        }}
-                        placeholder="Paste your JSON here to explore its structure..."
-                        className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl text-white font-mono text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">Interactive Tree View</label>
-                      <div className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl overflow-auto backdrop-blur-sm">
-                        {jsonInput ? (
-                          <JSONTreeViewer json={jsonInput} />
-                        ) : (
-                          <div className="text-gray-400 text-center mt-20">
-                            <div className="text-6xl mb-4">🌳</div>
-                            <p>Enter JSON to explore its tree structure</p>
-                            <p className="text-sm mt-2">Click nodes to expand/collapse • Hover to copy paths/values</p>
+                  <div className="h-[600px] md:h-[700px] lg:h-[800px] w-full">
+                    <ResizableContainer
+                      initialLeftWidth={50}
+                      minWidth={25}
+                      maxWidth={75}
+                      leftChild={
+                        <div className="space-y-2 h-full flex flex-col p-4">
+                          <label className="text-sm font-medium text-gray-300">Input JSON</label>
+                          <textarea
+                            value={jsonInput}
+                            onChange={(e) => {
+                              setJsonInput(e.target.value);
+                              if (e.target.value) {
+                                analyzeJsonTree(e.target.value);
+                              }
+                            }}
+                            placeholder="Paste your JSON here to explore its structure..."
+                            className="flex-1 p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl text-white font-mono text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm"
+                          />
+                        </div>
+                      }
+                      rightChild={
+                        <div className="space-y-2 h-full flex flex-col p-4">
+                          <label className="text-sm font-medium text-gray-300">Interactive Tree View</label>
+                          <div className="flex-1 p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl overflow-auto backdrop-blur-sm">
+                            {jsonInput ? (
+                              <JSONTreeViewer json={jsonInput} />
+                            ) : (
+                              <div className="text-gray-400 text-center mt-20">
+                                <div className="text-6xl mb-4">🌳</div>
+                                <p>Enter JSON to explore its tree structure</p>
+                                <p className="text-sm mt-2">Click nodes to expand/collapse • Hover to copy paths/values</p>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </div>
+                        </div>
+                      }
+                    />
                   </div>
                 </div>
               );
@@ -1028,7 +1073,10 @@ export default function Home() {
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => {
+                        trackToolSwitch(activeTab, tab.id);
+                        setActiveTab(tab.id);
+                      }}
                       className={`relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${activeTab === tab.id
                         ? 'text-white'
                         : 'text-gray-400 hover:text-gray-200'
@@ -1071,7 +1119,10 @@ export default function Home() {
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => {
+                        trackToolSwitch(activeTab, tab.id);
+                        setActiveTab(tab.id);
+                      }}
                       className={`relative px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${activeTab === tab.id
                         ? 'text-white bg-gradient-to-r from-blue-600/50 to-purple-600/50'
                         : 'text-gray-400 hover:text-gray-200'

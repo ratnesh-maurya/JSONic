@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "./components/ui/toast-provider";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -106,6 +107,7 @@ export default function RootLayout({
         <ToastProvider>
           {children}
         </ToastProvider>
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA4_ID || ""} />
       </body>
     </html>
   );
