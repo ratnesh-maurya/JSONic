@@ -40,7 +40,7 @@ export const TextareaWithLineNumbers = ({
             {/* Line Numbers */}
             <div
                 id="line-numbers"
-                className="flex flex-col bg-gray-700/20 border-r border-gray-600/30 text-gray-500 text-xs font-mono select-none overflow-hidden"
+                className="flex flex-col bg-gray-50 border-r border-gray-200 text-gray-500 text-xs font-mono select-none overflow-hidden"
                 style={{
                     width: '40px',
                     height: '100%',
@@ -52,8 +52,8 @@ export const TextareaWithLineNumbers = ({
                     <div
                         key={num}
                         className={`px-2 leading-5 text-center ${errorLine === num
-                            ? 'bg-red-500/30 text-red-200 font-bold border-r-2 border-red-400'
-                            : 'hover:bg-gray-600/20'
+                            ? 'bg-red-100 text-red-700 font-bold border-r-2 border-red-400'
+                            : 'hover:bg-gray-100'
                             }`}
                         style={{ minHeight: '20px' }}
                     >
@@ -69,7 +69,7 @@ export const TextareaWithLineNumbers = ({
                 onChange={(e) => onChange(e.target.value)}
                 onScroll={handleScroll}
                 placeholder={placeholder}
-                className={`flex-1 p-3 bg-transparent border-0 text-white font-mono text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 leading-5 ${className}`}
+                className={`flex-1 p-3 bg-transparent border-0 text-gray-900 font-mono text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 leading-5 ${className}`}
                 style={{
                     paddingLeft: '12px',
                     lineHeight: '20px',

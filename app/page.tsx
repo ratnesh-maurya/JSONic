@@ -50,7 +50,20 @@ export default function Home() {
   const [jsonPathResult, setJsonPathResult] = useState("");
 
   const [typesResult, setTypesResult] = useState("");
+  const [typeLanguage, setTypeLanguage] = useState<"go" | "typescript">("go");
   const [compressionRatio, setCompressionRatio] = useState(0);
+  
+  // Persist type language preference
+  useEffect(() => {
+    const savedTypeLang = localStorage.getItem("jsonicTypeLanguage");
+    if (savedTypeLang === "go" || savedTypeLang === "typescript") {
+      setTypeLanguage(savedTypeLang);
+    }
+  }, []);
+  
+  useEffect(() => {
+    localStorage.setItem("jsonicTypeLanguage", typeLanguage);
+  }, [typeLanguage]);
   const [treeStats, setTreeStats] = useState({ nodes: 0, depth: 0, size: 0 });
   const [validationSuggestions, setValidationSuggestions] = useState<string[]>([]);
 
@@ -301,14 +314,125 @@ export default function Home() {
   const convertToTypes = () => {
     try {
       const parsed = JSON.parse(jsonInput);
-      const type = jsonToTypes(parsed, "Root");
-      setTypesResult(type);
+      if (typeLanguage === "go") {
+        const type = jsonToGoTypes(parsed, "Root");
+        setTypesResult(type);
+      } else {
+        const type = jsonToTypeScriptTypes(parsed, "Root");
+        setTypesResult(type);
+      }
     } catch (error) {
       setTypesResult(error instanceof Error ? error.message : "Error generating types.");
     }
   };
 
-  const jsonToTypes = (obj: unknown, name: string): string => {
+  // Auto-generate types when JSON input changes
+  useEffect(() => {
+    if (jsonInput.trim() && activeTab === "types") {
+      // Add small delay to debounce rapid input
+      const timeoutId = setTimeout(() => {
+        try {
+          const parsed = JSON.parse(jsonInput);
+          if (typeLanguage === "go") {
+            const type = jsonToGoTypes(parsed, "Root");
+            setTypesResult(type);
+          } else {
+            const type = jsonToTypeScriptTypes(parsed, "Root");
+            setTypesResult(type);
+          }
+        } catch {
+          // Invalid JSON - show error message
+          if (jsonInput.trim().length > 0) {
+            setTypesResult(typeLanguage === "go" 
+              ? "// Invalid JSON - please check your input" 
+              : "// Invalid JSON - please check your input");
+          } else {
+            setTypesResult("");
+          }
+        }
+      }, 300); // 300ms debounce
+
+      return () => clearTimeout(timeoutId);
+    } else if (activeTab !== "types") {
+      setTypesResult("");
+    } else if (!jsonInput.trim()) {
+      setTypesResult("");
+    }
+  }, [jsonInput, typeLanguage, activeTab]);
+
+  const jsonToGoTypes = (obj: unknown, name: string): string => {
+    const toCamelCase = (str: string) => {
+      return str.charAt(0).toUpperCase() + str.slice(1).replace(/[-_](.)/g, (_, c) => c.toUpperCase());
+    };
+    
+    const goTypeName = toCamelCase(name);
+    
+    if (typeof obj !== 'object' || obj === null) {
+      const goType = typeof obj === 'string' ? 'string' : 
+                     typeof obj === 'number' ? (Number.isInteger(obj) ? 'int' : 'float64') :
+                     typeof obj === 'boolean' ? 'bool' : 'interface{}';
+      return `type ${goTypeName} ${goType}`;
+    }
+
+    if (Array.isArray(obj)) {
+      if (obj.length === 0) {
+        return `type ${goTypeName} []interface{}`;
+      }
+      const itemType = getGoTypeForValue(obj[0], `${goTypeName}Item`);
+      return `type ${goTypeName} []${itemType}`;
+    }
+
+    const keys = Object.keys(obj as Record<string, unknown>);
+    if (keys.length === 0) {
+      return `type ${goTypeName} struct {}`;
+    }
+
+    const fields = keys.map(key => {
+      const fieldName = toCamelCase(key);
+      // Always add json tag for consistency and to handle edge cases
+      const jsonTag = ` \`json:"${key}"\``;
+      const value = (obj as Record<string, unknown>)[key];
+      const fieldType = getGoTypeForValue(value, fieldName);
+      return `\t${fieldName} ${fieldType}${jsonTag}`;
+    }).join('\n');
+
+    const nestedTypes = keys
+      .map(key => {
+        const value = (obj as Record<string, unknown>)[key];
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          return jsonToGoTypes(value, key);
+        } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+          return jsonToGoTypes(value[0], `${key}Item`);
+        }
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n\n');
+
+    return `type ${goTypeName} struct {\n${fields}\n}${nestedTypes ? '\n\n' + nestedTypes : ''}`;
+  };
+
+  const getGoTypeForValue = (value: unknown, name: string): string => {
+    if (typeof value === 'string') return 'string';
+    if (typeof value === 'number') return Number.isInteger(value) ? 'int' : 'float64';
+    if (typeof value === 'boolean') return 'bool';
+    if (value === null) return 'interface{}';
+    
+    if (Array.isArray(value)) {
+      if (value.length === 0) return '[]interface{}';
+      const itemType = getGoTypeForValue(value[0], `${name}Item`);
+      return `[]${itemType}`;
+    }
+    
+    if (typeof value === 'object' && value !== null) {
+      const toCamelCase = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).replace(/[-_](.)/g, (_, c) => c.toUpperCase());
+      return toCamelCase(name);
+    }
+    
+    return 'interface{}';
+  };
+
+  const jsonToTypeScriptTypes = (obj: unknown, name: string): string => {
     if (typeof obj !== 'object' || obj === null) {
       return `type ${name} = ${typeof obj};`;
     }
@@ -317,12 +441,12 @@ export default function Home() {
       if (obj.length === 0) {
         return `type ${name} = any[];`;
       }
-      return `type ${name} = ${jsonToTypes(obj[0], name + "Item")}[];`;
+      return `type ${name} = ${jsonToTypeScriptTypes(obj[0], name + "Item")}[];`;
     }
 
     const keys = Object.keys(obj as Record<string, unknown>);
 
-    return `interface ${name} {\n${keys.map(key => `  ${key}: ${capitalize(key)};`).join('\n')}\n}\n\n${keys.map(key => jsonToTypes((obj as Record<string, unknown>)[key], capitalize(key))).join('\n')}`;
+    return `interface ${name} {\n${keys.map(key => `  ${key}: ${capitalize(key)};`).join('\n')}\n}\n\n${keys.map(key => jsonToTypeScriptTypes((obj as Record<string, unknown>)[key], capitalize(key))).join('\n')}`;
   };
 
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -364,6 +488,7 @@ export default function Home() {
     setErrorMessage("");
     setErrorPosition(null);
     setIsErrorVisible(false);
+    setTypesResult("");
   };
 
   const clearComparison = () => {
@@ -435,26 +560,26 @@ export default function Home() {
     { id: "formatter", name: "Formatter", icon: "✨", description: "Format and beautify JSON" },
     { id: "compressor", name: "Compressor", icon: "🗜️", description: "Compress JSON size" },
     { id: "jsonpath", name: "JSONPath", icon: "🔎", description: "Query JSON with JSONPath" },
-    { id: "types", name: "To Types", icon: "📜", description: "JSON to TypeScript" },
+    { id: "types", name: "To Types", icon: "📜", description: "JSON to Go/TypeScript" },
   ];
 
   const renderToolContent = () => {
     return (
       <>
         {isErrorVisible && (
-          <div className="relative flex items-center justify-between p-4 mb-6 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 shadow-lg shadow-red-500/10">
+          <div className="relative flex items-center justify-between p-4 mb-6 bg-red-50 border border-red-200 rounded-xl text-red-700 shadow-sm">
             <div>
               <p className="font-semibold">❌ Invalid JSON</p>
-              <p className="text-sm mt-1">{errorMessage}</p>
+              <p className="text-sm mt-1 text-red-600">{errorMessage}</p>
               {errorPosition && (
-                <div className="mt-1 text-xs">
+                <div className="mt-1 text-xs text-red-500">
                   Error near line {errorPosition.line}, column {errorPosition.column}
                 </div>
               )}
             </div>
             <button
               onClick={() => setIsErrorVisible(false)}
-              className="absolute top-2 right-2 text-red-300 hover:text-white transition-colors cursor-pointer"
+              className="absolute top-2 right-2 text-red-600 hover:text-red-700 transition-colors cursor-pointer text-lg leading-none"
             >
               &#x2715;
             </button>
@@ -473,31 +598,31 @@ export default function Home() {
                           setJsonInput('{"user":{"name":"John Doe","age":30,"address":{"street":"123 Main St","city":"New York"},"hobbies":["reading","swimming","coding"],"active":true}}');
                           analyzeJsonTree('{"user":{"name":"John Doe","age":30,"address":{"street":"123 Main St","city":"New York"},"hobbies":["reading","swimming","coding"],"active":true}}');
                         }}
-                        className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-gray-700/50 cursor-pointer"
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl text-sm transition-all duration-200 border border-gray-200 cursor-pointer font-medium"
                       >
                         Load Sample
                       </button>
                       <button
                         onClick={() => analyzeJsonTree(jsonInput)}
-                        className="px-4 py-2 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm transition-all duration-200 border border-emerald-300 cursor-pointer"
                       >
                         Analyze Tree
                       </button>
                     </div>
                     {treeStats.nodes > 0 && (
-                      <div className="flex items-center space-x-4 text-sm text-gray-300">
-                        <span className="bg-blue-600/20 px-2 py-1 rounded">
+                      <div className="flex items-center space-x-4 text-sm text-gray-700">
+                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">
                           📊 {treeStats.nodes} nodes
                         </span>
-                        <span className="bg-purple-600/20 px-2 py-1 rounded">
+                        <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded">
                           📏 {treeStats.depth} levels deep
                         </span>
-                        <span className="bg-green-600/20 px-2 py-1 rounded">
+                        <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded">
                           💾 {(treeStats.size / 1024).toFixed(1)}KB
                         </span>
                         <button
                           onClick={() => copyToClipboard(`Tree Analysis: ${treeStats.nodes} nodes, ${treeStats.depth} levels deep, ${(treeStats.size / 1024).toFixed(1)}KB`, "Tree stats copied!")}
-                          className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
+                          className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs transition-all duration-200 border border-emerald-300 cursor-pointer"
                         >
                           Copy Stats
                         </button>
@@ -511,7 +636,7 @@ export default function Home() {
                       maxWidth={75}
                       leftChild={
                         <div className="space-y-2 h-full flex flex-col p-4">
-                          <label className="text-sm font-medium text-gray-300">Input JSON</label>
+                          <label className="text-sm font-medium text-gray-700">Input JSON</label>
                           <textarea
                             value={jsonInput}
                             onChange={(e) => {
@@ -521,18 +646,18 @@ export default function Home() {
                               }
                             }}
                             placeholder="Paste your JSON here to explore its structure..."
-                            className="flex-1 p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl text-white font-mono text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm"
+                            className="flex-1 p-3 md:p-4 bg-white border border-gray-200 rounded-xl text-gray-900 font-mono shadow-sm text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 backdrop-blur-sm"
                           />
                         </div>
                       }
                       rightChild={
                         <div className="space-y-2 h-full flex flex-col p-4">
-                          <label className="text-sm font-medium text-gray-300">Interactive Tree View</label>
-                          <div className="flex-1 p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl overflow-auto backdrop-blur-sm">
+                          <label className="text-sm font-medium text-gray-700">Interactive Tree View</label>
+                          <div className="flex-1 p-3 md:p-4 bg-white border border-gray-200 rounded-xl shadow-sm overflow-auto backdrop-blur-sm">
                             {jsonInput ? (
                               <JSONTreeViewer json={jsonInput} />
                             ) : (
-                              <div className="text-gray-400 text-center mt-20">
+                              <div className="text-gray-600 text-center mt-20">
                                 <div className="text-6xl mb-4">🌳</div>
                                 <p>Enter JSON to explore its tree structure</p>
                                 <p className="text-sm mt-2">Click nodes to expand/collapse • Hover to copy paths/values</p>
@@ -554,18 +679,18 @@ export default function Home() {
                     <div className="flex justify-center space-x-2 mb-4">
                       <button
                         onClick={() => setViewMode("text")}
-                        className={`px-4 py-2 rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border cursor-pointer ${viewMode === "text"
-                          ? "bg-blue-600/50 text-white border-blue-700/50"
-                          : "bg-gray-600/50 text-gray-300 border-gray-700/50"
+                        className={`px-4 py-2 rounded-xl text-sm transition-all duration-200 border cursor-pointer ${viewMode === "text"
+                          ? "bg-blue-600/50 text-gray-900 border-indigo-300"
+                          : "bg-gray-100 text-gray-700 border-gray-200"
                           }`}
                       >
                         📝 Text View
                       </button>
                       <button
                         onClick={() => setViewMode("tree")}
-                        className={`px-4 py-2 rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border cursor-pointer ${viewMode === "tree"
-                          ? "bg-blue-600/50 text-white border-blue-700/50"
-                          : "bg-gray-600/50 text-gray-300 border-gray-700/50"
+                        className={`px-4 py-2 rounded-xl text-sm transition-all duration-200 border cursor-pointer ${viewMode === "tree"
+                          ? "bg-blue-600/50 text-gray-900 border-indigo-300"
+                          : "bg-gray-100 text-gray-700 border-gray-200"
                           }`}
                       >
                         🌳 Tree View
@@ -575,11 +700,11 @@ export default function Home() {
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                      <label className="text-sm font-medium text-gray-300">Indent Size:</label>
+                      <label className="text-sm font-medium text-gray-700">Indent Size:</label>
                       <select
                         value={indentSize}
                         onChange={(e) => setIndentSize(Number(e.target.value))}
-                        className="bg-gray-800/20 border border-gray-700/30 rounded-lg px-3 py-2 text-white text-sm backdrop-blur-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
                       >
                         <option value={2}>2 spaces</option>
                         <option value={4}>4 spaces</option>
@@ -591,30 +716,30 @@ export default function Home() {
                           id="sortKeys"
                           checked={sortKeys}
                           onChange={(e) => setSortKeys(e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-gray-700"
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-indigo-500 bg-gray-100"
                         />
-                        <label htmlFor="sortKeys" className="text-sm text-gray-300">Sort Keys</label>
+                        <label htmlFor="sortKeys" className="text-sm text-gray-700">Sort Keys</label>
                       </div>
-                      <span className="text-sm text-gray-400">
+                      <span className="text-sm text-gray-600">
                         {jsonInput.length} characters
                       </span>
                     </div>
                     <div className="flex space-x-2">
                       <button
                         onClick={loadSampleJson}
-                        className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-gray-700/50 cursor-pointer"
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl text-sm transition-all duration-200 border border-gray-200 cursor-pointer font-medium"
                       >
                         Load Sample
                       </button>
                       <button
                         onClick={formatJson}
-                        className="px-4 py-2 bg-blue-600/50 hover:bg-blue-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-blue-700/50 cursor-pointer"
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm transition-all duration-200 border border-indigo-300 cursor-pointer"
                       >
                         Format JSON
                       </button>
                       <button
                         onClick={clearAll}
-                        className="px-4 py-2 bg-red-600/50 hover:bg-red-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-red-700/50 cursor-pointer"
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm transition-all duration-200 border border-red-300 cursor-pointer"
                       >
                         Clear
                       </button>
@@ -622,26 +747,26 @@ export default function Home() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">Input JSON</label>
+                      <label className="text-sm font-medium text-gray-700">Input JSON</label>
                       <textarea
                         value={jsonInput}
                         onChange={(e) => setJsonInput(e.target.value)}
                         placeholder="Paste your JSON here..."
-                        className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl text-white font-mono text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm"
+                        className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-white border border-gray-200 rounded-xl text-gray-900 font-mono shadow-sm text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 backdrop-blur-sm"
                       />
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium text-gray-300">Formatted Output</label>
+                        <label className="text-sm font-medium text-gray-700">Formatted Output</label>
                         <div className="flex items-center space-x-2">
                           {formattedJson && (
                             <>
-                              <span className="text-xs text-gray-400">
+                              <span className="text-xs text-gray-600">
                                 {formattedJson.length} characters
                               </span>
                               <button
                                 onClick={() => copyToClipboard(formattedJson, "Formatted JSON copied!")}
-                                className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
+                                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs transition-all duration-200 border border-emerald-300 cursor-pointer"
                               >
                                 Copy
                               </button>
@@ -649,21 +774,21 @@ export default function Home() {
                           )}
                         </div>
                       </div>
-                      <div className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl overflow-auto backdrop-blur-sm">
+                      <div className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-white border border-gray-200 rounded-xl shadow-sm overflow-auto backdrop-blur-sm">
                         {formattedJson ? (
                           viewMode === "text" ? (
                             <JSONHighlighter
                               json={formattedJson}
-                              className="text-white font-mono text-sm whitespace-pre-wrap"
+                              className="text-gray-900 font-mono text-sm whitespace-pre-wrap"
                             />
                           ) : (
                             <JSONTreeViewer
                               json={formattedJson}
-                              className="text-white"
+                              className="text-gray-900"
                             />
                           )
                         ) : (
-                          <pre className="text-gray-400 font-mono text-sm">
+                          <pre className="text-gray-600 font-mono text-sm">
                             Formatted JSON will appear here...
                           </pre>
                         )}
@@ -678,26 +803,26 @@ export default function Home() {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                      <span className="text-sm text-gray-400">
+                      <span className="text-sm text-gray-600">
                         {jsonInput.length} characters
                       </span>
                     </div>
                     <div className="flex space-x-2">
                       <button
                         onClick={loadSampleJson}
-                        className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-gray-700/50 cursor-pointer"
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl text-sm transition-all duration-200 border border-gray-200 cursor-pointer font-medium"
                       >
                         Load Sample
                       </button>
                       <button
                         onClick={validateJson}
-                        className="px-4 py-2 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm transition-all duration-200 border border-emerald-300 cursor-pointer"
                       >
                         Validate JSON
                       </button>
                       <button
                         onClick={clearAll}
-                        className="px-4 py-2 bg-red-600/50 hover:bg-red-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-red-700/50 cursor-pointer"
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm transition-all duration-200 border border-red-300 cursor-pointer"
                       >
                         Clear
                       </button>
@@ -705,8 +830,8 @@ export default function Home() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">Input JSON</label>
-                      <div className="w-full h-[300px] md:h-[500px] lg:h-[600px] bg-gray-800/40 border border-gray-700/30 rounded-xl backdrop-blur-sm overflow-hidden">
+                      <label className="text-sm font-medium text-gray-700">Input JSON</label>
+                      <div className="w-full h-[300px] md:h-[500px] lg:h-[600px] bg-white border border-gray-200 rounded-xl shadow-sm backdrop-blur-sm overflow-hidden">
                         <TextareaWithLineNumbers
                           value={jsonInput}
                           onChange={setJsonInput}
@@ -717,28 +842,28 @@ export default function Home() {
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium text-gray-300">Validation Result & Suggestions</label>
+                        <label className="text-sm font-medium text-gray-700">Validation Result & Suggestions</label>
                         {isValid && (
                           <button
                             onClick={() => copyToClipboard("✅ Valid JSON", "Validation result copied!")}
-                            className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
+                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs transition-all duration-200 border border-emerald-300 cursor-pointer"
                           >
                             Copy Result
                           </button>
                         )}
                       </div>
-                      <div className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl overflow-auto backdrop-blur-sm">
-                        <div className={`text-center text-lg mb-6 ${isValid === true ? 'text-green-400' : isValid === false ? 'text-red-400' : 'text-gray-400'}`}>
+                      <div className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-white border border-gray-200 rounded-xl shadow-sm overflow-auto backdrop-blur-sm">
+                        <div className={`text-center text-lg mb-6 ${isValid === true ? 'text-emerald-600' : isValid === false ? 'text-red-600' : 'text-gray-600'}`}>
                           {formattedJson || "Validation result will appear here..."}
                         </div>
 
                         {validationSuggestions.length > 0 && (
                           <div className="space-y-3">
-                            <h3 className="text-sm font-semibold text-gray-300 border-b border-gray-700 pb-2">
+                            <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-200 pb-2">
                               {isValid ? "💡 Optimization Suggestions" : "🔧 Fix Suggestions"}
                             </h3>
                             {validationSuggestions.map((suggestion, index) => (
-                              <div key={index} className="bg-gray-700/30 p-3 rounded-lg border border-gray-600/30">
+                              <div key={index} className="bg-gray-100/30 p-3 rounded-xl border border-gray-600/30">
                                 <p className="text-sm text-gray-200">{suggestion}</p>
                               </div>
                             ))}
@@ -746,15 +871,15 @@ export default function Home() {
                         )}
 
                         {errorPosition && (
-                          <div className="mt-4 p-3 bg-red-900/20 border border-red-700/30 rounded-lg">
-                            <p className="text-sm text-red-300">
+                          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                            <p className="text-sm text-red-700">
                               <strong>Error Location:</strong> Line {errorPosition.line}, Column {errorPosition.column}
                             </p>
                           </div>
                         )}
 
                         {!jsonInput && (
-                          <div className="text-gray-400 text-center mt-20">
+                          <div className="text-gray-600 text-center mt-20">
                             <div className="text-6xl mb-4">✅</div>
                             <p>Enter JSON to validate and get intelligent suggestions</p>
                             <p className="text-sm mt-2">Get fix recommendations • Performance tips • Best practices</p>
@@ -771,26 +896,26 @@ export default function Home() {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                      <span className="text-sm text-gray-400">
+                      <span className="text-sm text-gray-600">
                         {jsonInput.length} characters
                       </span>
                     </div>
                     <div className="flex space-x-2">
                       <button
                         onClick={loadSampleJson}
-                        className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-gray-700/50 cursor-pointer"
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl text-sm transition-all duration-200 border border-gray-200 cursor-pointer font-medium"
                       >
                         Load Sample
                       </button>
                       <button
                         onClick={compressJson}
-                        className="px-4 py-2 bg-purple-600/50 hover:bg-purple-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-purple-700/50 cursor-pointer"
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm transition-all duration-200 border border-purple-300 cursor-pointer"
                       >
                         Compress JSON
                       </button>
                       <button
                         onClick={clearAll}
-                        className="px-4 py-2 bg-red-600/50 hover:bg-red-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-red-700/50 cursor-pointer"
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm transition-all duration-200 border border-red-300 cursor-pointer"
                       >
                         Clear
                       </button>
@@ -798,29 +923,29 @@ export default function Home() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">Input JSON</label>
+                      <label className="text-sm font-medium text-gray-700">Input JSON</label>
                       <textarea
                         value={jsonInput}
                         onChange={(e) => setJsonInput(e.target.value)}
                         placeholder="Paste your JSON here..."
-                        className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl text-white font-mono text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm"
+                        className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-white border border-gray-200 rounded-xl text-gray-900 font-mono shadow-sm text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 backdrop-blur-sm"
                       />
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium text-gray-300">Compressed Output</label>
+                        <label className="text-sm font-medium text-gray-700">Compressed Output</label>
                         <div className="flex items-center space-x-2">
                           {formattedJson && (
                             <>
-                              <span className="text-xs text-green-400 font-semibold">
+                              <span className="text-xs text-emerald-600 font-semibold">
                                 {compressionRatio.toFixed(2)}% smaller
                               </span>
-                              <span className="text-xs text-gray-400">
+                              <span className="text-xs text-gray-600">
                                 {formattedJson.length} characters
                               </span>
                               <button
                                 onClick={() => copyToClipboard(formattedJson, "Compressed JSON copied!")}
-                                className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
+                                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs transition-all duration-200 border border-emerald-300 cursor-pointer"
                               >
                                 Copy
                               </button>
@@ -828,14 +953,14 @@ export default function Home() {
                           )}
                         </div>
                       </div>
-                      <div className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl overflow-auto backdrop-blur-sm">
+                      <div className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-white border border-gray-200 rounded-xl shadow-sm overflow-auto backdrop-blur-sm">
                         {formattedJson ? (
                           <JSONHighlighter
                             json={formattedJson}
-                            className="text-white font-mono text-sm whitespace-pre-wrap"
+                            className="text-gray-900 font-mono text-sm whitespace-pre-wrap"
                           />
                         ) : (
-                          <pre className="text-gray-400 font-mono text-sm">
+                          <pre className="text-gray-600 font-mono text-sm">
                             Compressed JSON will appear here...
                           </pre>
                         )}
@@ -853,13 +978,13 @@ export default function Home() {
                     <div className="flex space-x-2">
                       <button
                         onClick={loadSampleComparison}
-                        className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-gray-700/50 cursor-pointer"
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl text-sm transition-all duration-200 border border-gray-200 cursor-pointer font-medium"
                       >
                         Load Sample
                       </button>
                       <button
                         onClick={clearComparison}
-                        className="px-4 py-2 bg-red-600/50 hover:bg-red-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-red-700/50 cursor-pointer"
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm transition-all duration-200 border border-red-300 cursor-pointer"
                       >
                         Clear
                       </button>
@@ -869,11 +994,11 @@ export default function Home() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium text-gray-300">JSON 1</label>
+                        <label className="text-sm font-medium text-gray-700">JSON 1</label>
                         {json1 && (
                           <button
                             onClick={() => copyToClipboard(json1, "JSON 1 copied!")}
-                            className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
+                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs transition-all duration-200 border border-emerald-300 cursor-pointer"
                           >
                             Copy
                           </button>
@@ -883,16 +1008,16 @@ export default function Home() {
                         value={json1}
                         onChange={(e) => setJson1(e.target.value)}
                         placeholder="Paste first JSON here..."
-                        className="w-full h-[200px] md:h-[300px] lg:h-[400px] p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl text-white font-mono text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm"
+                        className="w-full h-[200px] md:h-[300px] lg:h-[400px] p-3 md:p-4 bg-white border border-gray-200 rounded-xl text-gray-900 font-mono shadow-sm text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 backdrop-blur-sm"
                       />
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium text-gray-300">JSON 2</label>
+                        <label className="text-sm font-medium text-gray-700">JSON 2</label>
                         {json2 && (
                           <button
                             onClick={() => copyToClipboard(json2, "JSON 2 copied!")}
-                            className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
+                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs transition-all duration-200 border border-emerald-300 cursor-pointer"
                           >
                             Copy
                           </button>
@@ -902,23 +1027,23 @@ export default function Home() {
                         value={json2}
                         onChange={(e) => setJson2(e.target.value)}
                         placeholder="Paste second JSON here..."
-                        className="w-full h-[200px] md:h-[300px] lg:h-[400px] p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl text-white font-mono text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm"
+                        className="w-full h-[200px] md:h-[300px] lg:h-[400px] p-3 md:p-4 bg-white border border-gray-200 rounded-xl text-gray-900 font-mono shadow-sm text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 backdrop-blur-sm"
                       />
                     </div>
                   </div>
 
                   {/* Bottom Row - Comparison Result */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-300">Comparison Result</label>
-                    <div className="w-full h-[300px] md:h-[400px] lg:h-[500px] p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl overflow-auto backdrop-blur-sm">
+                    <label className="text-sm font-medium text-gray-700">Comparison Result</label>
+                    <div className="w-full h-[300px] md:h-[400px] lg:h-[500px] p-3 md:p-4 bg-white border border-gray-200 rounded-xl shadow-sm overflow-auto backdrop-blur-sm">
                       {json1 && json2 ? (
                         <JSONComparer
                           json1={json1}
                           json2={json2}
-                          className="text-white"
+                          className="text-gray-900"
                         />
                       ) : (
-                        <div className="text-gray-400 text-center mt-20">
+                        <div className="text-gray-600 text-center mt-20">
                           <div className="text-6xl mb-4">🔍</div>
                           <p>Enter JSON in both fields above to compare</p>
                           <p className="text-sm mt-2">Supports smart comparison • Visual diff • Tree structure comparison</p>
@@ -938,39 +1063,39 @@ export default function Home() {
                       value={jsonPathQuery}
                       onChange={(e) => setJsonPathQuery(e.target.value)}
                       placeholder="Enter JSONPath query (e.g., $.store.book[*].author)"
-                      className="flex-grow p-2 bg-gray-800/20 border border-gray-700/30 rounded-lg text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-grow p-2 bg-white border border-gray-200 rounded-xl text-gray-900 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                     <button
                       onClick={evaluateJsonPath}
-                      className="px-4 py-2 bg-blue-600/50 hover:bg-blue-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-blue-700/50 cursor-pointer"
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm transition-all duration-200 border border-indigo-300 cursor-pointer"
                     >
                       Evaluate
                     </button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">Input JSON</label>
+                      <label className="text-sm font-medium text-gray-700">Input JSON</label>
                       <textarea
                         value={jsonInput}
                         onChange={(e) => setJsonInput(e.target.value)}
                         placeholder="Paste your JSON here..."
-                        className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl text-white font-mono text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm"
+                        className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-white border border-gray-200 rounded-xl text-gray-900 font-mono shadow-sm text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 backdrop-blur-sm"
                       />
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium text-gray-300">Result</label>
+                        <label className="text-sm font-medium text-gray-700">Result</label>
                         {jsonPathResult && (
                           <button
                             onClick={() => copyToClipboard(jsonPathResult, "JSONPath result copied!")}
-                            className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
+                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs transition-all duration-200 border border-emerald-300 cursor-pointer"
                           >
                             Copy Result
                           </button>
                         )}
                       </div>
-                      <div className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl overflow-auto backdrop-blur-sm">
-                        <pre className="text-white font-mono text-sm whitespace-pre-wrap">
+                      <div className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-white border border-gray-200 rounded-xl shadow-sm overflow-auto backdrop-blur-sm">
+                        <pre className="text-gray-900 font-mono text-sm whitespace-pre-wrap">
                           {jsonPathResult}
                         </pre>
                       </div>
@@ -984,40 +1109,99 @@ export default function Home() {
             case "types":
               return (
                 <div className="space-y-6">
-                  <div className="flex items-center justify-end space-x-2">
-                    <button
-                      onClick={convertToTypes}
-                      className="px-4 py-2 bg-yellow-600/50 hover:bg-yellow-700/50 text-white rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-yellow-700/50"
-                    >
-                      Generate Types
-                    </button>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm font-medium text-gray-700">Language:</span>
+                      <div className="flex items-center bg-gray-100 rounded-xl p-1 border border-gray-200">
+                        <button
+                          onClick={() => setTypeLanguage("go")}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                            typeLanguage === "go"
+                              ? "bg-indigo-600 text-white shadow-sm"
+                              : "text-gray-600 hover:text-gray-900"
+                          }`}
+                        >
+                          Go
+                        </button>
+                        <button
+                          onClick={() => setTypeLanguage("typescript")}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                            typeLanguage === "typescript"
+                              ? "bg-indigo-600 text-white shadow-sm"
+                              : "text-gray-600 hover:text-gray-900"
+                          }`}
+                        >
+                          TypeScript
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={convertToTypes}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm transition-all duration-200 border border-indigo-300 font-medium shadow-sm"
+                      >
+                        Regenerate
+                      </button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">Input JSON</label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium text-gray-700">Input JSON</label>
+                        {jsonInput && (
+                          <button
+                            onClick={() => {
+                              setJsonInput("");
+                              setTypesResult("");
+                            }}
+                            className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
                       <textarea
                         value={jsonInput}
                         onChange={(e) => setJsonInput(e.target.value)}
-                        placeholder="Paste your JSON here..."
-                        className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl text-white font-mono text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm"
+                        placeholder="Paste your JSON here... Types will be generated automatically"
+                        className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-white border border-gray-200 rounded-xl text-gray-900 font-mono shadow-sm text-xs md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
                       />
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium text-gray-300">TypeScript Interfaces</label>
+                        <div className="flex items-center space-x-2">
+                          <label className="text-sm font-medium text-gray-700">
+                            {typeLanguage === "go" ? "Go Structs" : "TypeScript Interfaces"}
+                          </label>
+                          {typesResult && (
+                            <span className="text-xs text-gray-500 font-mono">
+                              ({typesResult.split('\n').length} lines)
+                            </span>
+                          )}
+                        </div>
                         {typesResult && (
                           <button
-                            onClick={() => copyToClipboard(typesResult, "TypeScript types copied!")}
-                            className="px-3 py-1 bg-green-600/50 hover:bg-green-700/50 text-white rounded-lg text-xs transition-all duration-200 backdrop-blur-sm border border-green-700/50 cursor-pointer"
+                            onClick={() => copyToClipboard(typesResult, `${typeLanguage === "go" ? "Go" : "TypeScript"} types copied!`)}
+                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs transition-all duration-200 border border-emerald-300 cursor-pointer font-medium shadow-sm"
                           >
-                            Copy Types
+                            Copy
                           </button>
                         )}
                       </div>
-                      <div className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-gray-800/40 border border-gray-700/30 rounded-xl overflow-auto backdrop-blur-sm">
-                        <pre className="text-white font-mono text-sm whitespace-pre-wrap">
-                          {typesResult}
-                        </pre>
+                      <div className="w-full h-[300px] md:h-[500px] lg:h-[600px] p-3 md:p-4 bg-white border border-gray-200 rounded-xl shadow-sm overflow-auto">
+                        {typesResult ? (
+                          <pre className="text-gray-900 font-mono text-sm whitespace-pre-wrap leading-relaxed">
+                            <code className={typeLanguage === "go" ? "language-go" : "language-typescript"}>
+                              {typesResult}
+                            </code>
+                          </pre>
+                        ) : (
+                          <div className="text-gray-400 text-center mt-20">
+                            <div className="text-4xl mb-3">{typeLanguage === "go" ? "🦫" : "📜"}</div>
+                            <p className="text-sm font-medium text-gray-600">Enter JSON to generate {typeLanguage === "go" ? "Go" : "TypeScript"} types</p>
+                            <p className="text-xs mt-2 text-gray-500">Types are generated automatically as you type</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1048,11 +1232,11 @@ export default function Home() {
                 href="https://github.com/ratnesh-maurya/JSONic"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center w-10 h-10 bg-gray-800/50 hover:bg-gray-700/70 border border-gray-700/50 rounded-full transition-all duration-200 backdrop-blur-sm group cursor-pointer"
+                className="flex items-center justify-center w-10 h-10 bg-gray-800/50 hover:bg-gray-100/70 border border-gray-200 rounded-full transition-all duration-200 backdrop-blur-sm group cursor-pointer"
                 title="View on GitHub"
               >
                 <svg
-                  className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors duration-200"
+                  className="w-5 h-5 text-gray-700 group-hover:text-gray-900 transition-colors duration-200"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -1065,11 +1249,11 @@ export default function Home() {
               <div className="flex flex-col items-center justify-center mb-4">
                 <div className="flex items-center space-x-3 mb-4 cursor-pointer">
                   <span className="text-2xl md:text-3xl">🔮</span>
-                  <h1 className="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                  <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600">
                     JSONic
                   </h1>
                 </div>
-                <nav className="hidden md:flex items-center space-x-2 bg-gray-800/0 border border-gray-700/10 p-2 rounded-full shadow-lg backdrop-blur-none">
+                <nav className="hidden md:flex items-center space-x-2 bg-white/60 backdrop-blur-sm border border-gray-200/60 p-2 rounded-full shadow-sm">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
@@ -1078,13 +1262,13 @@ export default function Home() {
                         setActiveTab(tab.id);
                       }}
                       className={`relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${activeTab === tab.id
-                        ? 'text-white'
-                        : 'text-gray-400 hover:text-gray-200'
+                        ? 'text-gray-900'
+                        : 'text-gray-600 hover:text-gray-200'
                         }`}
                     >
                       {activeTab === tab.id && (
                         <motion.div
-                          className="absolute inset-0 bg-gradient-to-r from-blue-600/50 to-purple-600/50 rounded-full"
+                          className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
                           layoutId="activeTab"
                           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                         />
@@ -1099,7 +1283,7 @@ export default function Home() {
               </div>
               <div className="text-center">
                 <motion.p
-                  className="text-gray-400 text-sm md:text-base font-medium max-w-3xl mx-auto px-2"
+                  className="text-gray-600 text-sm md:text-base font-medium max-w-3xl mx-auto px-2"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.2 }}
@@ -1114,7 +1298,7 @@ export default function Home() {
           {/* Mobile Navigation */}
           <div className="md:hidden px-4 pb-4">
             <div className="max-w-7xl mx-auto">
-              <div className="bg-gray-800/0 border border-gray-700/10 rounded-xl p-2 backdrop-blur-none">
+              <div className="bg-white/60 backdrop-blur-sm border border-gray-200/60 rounded-xl p-2 shadow-sm">
                 <div className="grid grid-cols-2 gap-1">
                   {tabs.map((tab) => (
                     <button
@@ -1123,9 +1307,9 @@ export default function Home() {
                         trackToolSwitch(activeTab, tab.id);
                         setActiveTab(tab.id);
                       }}
-                      className={`relative px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${activeTab === tab.id
-                        ? 'text-white bg-gradient-to-r from-blue-600/50 to-purple-600/50'
-                        : 'text-gray-400 hover:text-gray-200'
+                      className={`relative px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 cursor-pointer ${activeTab === tab.id
+                        ? 'text-white bg-gradient-to-r from-indigo-600 to-purple-600'
+                        : 'text-gray-600 hover:text-gray-900 bg-white/50'
                         }`}
                     >
                       <span className="flex items-center justify-center space-x-1">
@@ -1142,7 +1326,7 @@ export default function Home() {
           {/* Main Content */}
           <main className="flex-grow py-4 md:py-8 px-4">
             <div className="max-w-7xl mx-auto">
-              <div className="bg-gray-900/0 border border-gray-700/10 rounded-xl md:rounded-3xl p-4 md:p-8 backdrop-blur-none shadow-2xl">
+              <div className="bg-white/90 border border-gray-200/60 rounded-xl md:rounded-3xl p-4 md:p-8 backdrop-blur-sm shadow-xl">
                 {/* Tool Content */}
                 {renderToolContent()}
               </div>

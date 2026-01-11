@@ -100,9 +100,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} antialiased bg-black text-white`}
+        className={`${inter.variable} ${jetbrainsMono.variable} antialiased bg-[#fafafa] text-[#0a0a0a]`}
       >
         <ToastProvider>
           {children}

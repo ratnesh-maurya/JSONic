@@ -37,18 +37,18 @@ const TreeNode = ({ data, path, level, isExpanded, onToggle }: TreeNodeProps) =>
     };
 
     const getValueColor = (value: unknown) => {
-        if (typeof value === "string") return "text-emerald-400";
-        if (typeof value === "number") return "text-blue-400 font-medium";
-        if (typeof value === "boolean") return "text-purple-400 font-bold";
-        if (value === null) return "text-gray-400 font-bold italic";
-        return "text-white";
+        if (typeof value === "string") return "text-emerald-600";
+        if (typeof value === "number") return "text-violet-600 font-medium";
+        if (typeof value === "boolean") return "text-red-600 font-semibold";
+        if (value === null) return "text-gray-500 font-semibold italic";
+        return "text-gray-900";
     };
 
     if (hasChildren) {
         return (
             <div className="relative">
                 <div
-                    className="group flex items-center cursor-pointer hover:bg-gray-800/40 rounded-md p-1 transition-all duration-200"
+                    className="group flex items-center cursor-pointer hover:bg-gray-100 rounded-md p-1 transition-all duration-200"
                     onClick={(e) => {
                         e.stopPropagation();
                         onToggle(path);
@@ -57,17 +57,17 @@ const TreeNode = ({ data, path, level, isExpanded, onToggle }: TreeNodeProps) =>
                     onMouseLeave={() => setIsHovered(false)}
                 >
                     <span
-                        className={`text-blue-400 mr-2 text-xs w-4 select-none transition-transform duration-100 ${expanded ? 'rotate-90' : ''}`}
+                        className={`text-indigo-600 mr-2 text-xs w-4 select-none transition-transform duration-100 ${expanded ? 'rotate-90' : ''}`}
                     >
                         ▶
                     </span>
-                    <span className="text-purple-400 font-semibold text-md select-none">{isArray ? "[" : "{"}</span>
+                    <span className="text-purple-600 font-semibold text-md select-none">{isArray ? "[" : "{"}</span>
                     {!expanded && (
-                        <span className="text-gray-400 ml-2 text-xs italic bg-gray-700/50 px-2 py-0.5 rounded-full select-none">
+                        <span className="text-gray-500 ml-2 text-xs italic bg-gray-100 px-2 py-0.5 rounded-full select-none">
                             {childrenCount} {isArray ? "items" : "props"}
                         </span>
                     )}
-                    {!expanded && <span className="text-purple-400 ml-1 font-semibold text-md select-none">{isArray ? "]" : "}"}</span>}
+                    {!expanded && <span className="text-purple-600 ml-1 font-semibold text-md select-none">{isArray ? "]" : "}"}</span>}
 
                     <AnimatePresence>
                         {isHovered && !expanded && (
@@ -83,7 +83,7 @@ const TreeNode = ({ data, path, level, isExpanded, onToggle }: TreeNodeProps) =>
                                         e.stopPropagation();
                                         copyToClipboard(JSON.stringify(data, null, 2), "Value copied!");
                                     }}
-                                    className="px-2 py-0.5 text-xs rounded hover:bg-gray-600/50 bg-gray-700/50 border border-gray-600/50 transition-colors cursor-pointer"
+                                    className="px-2 py-0.5 text-xs rounded-xl hover:bg-gray-200 bg-white border border-gray-300 transition-colors cursor-pointer text-gray-700 font-medium"
                                     title="Copy value"
                                 >
                                     Copy
@@ -94,11 +94,11 @@ const TreeNode = ({ data, path, level, isExpanded, onToggle }: TreeNodeProps) =>
                 </div>
 
                 {expanded && (
-                    <div className="ml-4 border-l-2 border-gray-700/50 pl-4 mt-1">
+                    <div className="ml-4 border-l-2 border-gray-200 pl-4 mt-1">
                         {Object.entries(data).map(([key, value]) => (
                             <div key={`${path}.${key}`} className="flex items-start my-1 group/item">
-                                <span className="text-cyan-300 font-medium mr-2 text-xs select-none">&quot;{key}&quot;</span>
-                                <span className="text-gray-300 mr-2 font-bold select-none">:</span>
+                                <span className="text-sky-600 font-medium mr-2 text-xs select-none">&quot;{key}&quot;</span>
+                                <span className="text-gray-600 mr-2 font-bold select-none">:</span>
                                 <div className="flex-1">
                                     <TreeNode
                                         data={value}
@@ -113,7 +113,7 @@ const TreeNode = ({ data, path, level, isExpanded, onToggle }: TreeNodeProps) =>
                     </div>
                 )}
                 {expanded && (
-                    <div className="text-purple-400 font-bold text-md pl-1 mt-1 select-none">
+                    <div className="text-purple-600 font-bold text-md pl-1 mt-1 select-none">
                         {isArray ? "]" : "}"}
                     </div>
                 )}
@@ -187,7 +187,7 @@ export const JSONTreeViewer = ({ json, className }: JSONTreeViewerProps) => {
         );
     } catch {
         return (
-            <div className="text-red-400 p-2">
+            <div className="text-red-600 p-2">
                 Invalid JSON
             </div>
         );

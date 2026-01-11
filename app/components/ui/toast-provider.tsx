@@ -72,8 +72,8 @@ const ToastComponent = ({ toast, onRemove }: { toast: ToastItem; onRemove: (id: 
             layout
         >
             <div
-                className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg md:rounded-xl shadow-lg backdrop-blur-sm border border-white/10 min-w-[250px] md:min-w-[300px] max-w-[320px] md:max-w-[400px] cursor-pointer group hover:shadow-xl transition-all duration-200"
-                style={{ backgroundColor: 'rgba(17,17,17,0.96)', color: '#FFFFFF' }}
+                className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg md:rounded-xl shadow-lg backdrop-blur-sm border border-gray-200 min-w-[250px] md:min-w-[300px] max-w-[320px] md:max-w-[400px] cursor-pointer group hover:shadow-xl transition-all duration-200 bg-white"
+                style={{ color: '#1f2937' }}
                 onClick={() => onRemove(toast.id)}
             >
                 <div

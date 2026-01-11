@@ -60,18 +60,18 @@ export const JSONComparer = ({ json1, json2, className }: JSONComparerProps) => 
                 <div className="flex items-center space-x-2">
                     <button
                         onClick={() => setViewMode("diff")}
-                        className={`px-3 py-1 rounded text-sm transition-all duration-200 cursor-pointer ${viewMode === "diff"
-                            ? "bg-blue-600/50 text-white border border-blue-500/50"
-                            : "bg-gray-700/50 text-gray-300 border border-gray-600/50"
+                        className={`px-3 py-1 rounded-xl text-sm transition-all duration-200 cursor-pointer font-medium ${viewMode === "diff"
+                            ? "bg-indigo-600 text-white border border-indigo-300"
+                            : "bg-gray-100 text-gray-700 border border-gray-200"
                             }`}
                     >
                         Diff View
                     </button>
                     <button
                         onClick={() => setViewMode("tree")}
-                        className={`px-3 py-1 rounded text-sm transition-all duration-200 cursor-pointer ${viewMode === "tree"
-                            ? "bg-blue-600/50 text-white border border-blue-500/50"
-                            : "bg-gray-700/50 text-gray-300 border border-gray-600/50"
+                        className={`px-3 py-1 rounded-xl text-sm transition-all duration-200 cursor-pointer font-medium ${viewMode === "tree"
+                            ? "bg-indigo-600 text-white border border-indigo-300"
+                            : "bg-gray-100 text-gray-700 border border-gray-200"
                             }`}
                     >
                         Tree View
@@ -83,28 +83,28 @@ export const JSONComparer = ({ json1, json2, className }: JSONComparerProps) => 
                         id="smartCompare"
                         checked={smartCompare}
                         onChange={(e) => setSmartCompare(e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-gray-700"
+                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 bg-white"
                     />
-                    <label htmlFor="smartCompare" className="text-sm text-gray-300">Smart Compare (ignore order)</label>
+                    <label htmlFor="smartCompare" className="text-sm text-gray-700">Smart Compare (ignore order)</label>
                 </div>
             </div>
 
             {/* Summary */}
-            <div className="mb-4 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
-                <h4 className="text-sm font-medium text-gray-300 mb-2">Comparison Summary</h4>
+            <div className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Comparison Summary</h4>
                 <div className="flex flex-wrap gap-4 text-xs">
-                    <span className="text-green-400">Additions: {summary.added}</span>
-                    <span className="text-red-400">Deletions: {summary.removed}</span>
+                    <span className="text-emerald-600 font-medium">Additions: {summary.added}</span>
+                    <span className="text-red-600 font-medium">Deletions: {summary.removed}</span>
                 </div>
             </div>
 
             {/* Differences View */}
             {viewMode === "diff" ? (
-                <div className="w-full h-[350px] p-4 bg-gray-900/40 border border-gray-700/50 rounded-xl overflow-auto backdrop-blur-sm">
+                <div className="w-full h-[350px] p-4 bg-white border border-gray-200 rounded-xl overflow-auto shadow-sm">
                     <pre className="font-mono text-sm whitespace-pre-wrap">
                         {diffs.map((part, index) => {
-                            const color = part.added ? 'bg-green-500/20 text-green-300' :
-                                part.removed ? 'bg-red-500/20 text-red-300' : 'text-gray-400';
+                            const color = part.added ? 'bg-emerald-100 text-emerald-700' :
+                                part.removed ? 'bg-red-100 text-red-700' : 'text-gray-600';
                             return <span key={index} className={color}>{part.value}</span>;
                         })}
                     </pre>
@@ -112,12 +112,12 @@ export const JSONComparer = ({ json1, json2, className }: JSONComparerProps) => 
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-gray-300 bg-blue-600/20 px-3 py-1 rounded">JSON 1 - Tree Structure</h4>
-                        <div className="w-full h-[350px] p-4 bg-gray-900/40 border border-gray-700/50 rounded-xl overflow-auto backdrop-blur-sm">
+                        <h4 className="text-sm font-medium text-gray-700 bg-blue-100 text-blue-700 px-3 py-1 rounded-xl">JSON 1 - Tree Structure</h4>
+                        <div className="w-full h-[350px] p-4 bg-white border border-gray-200 rounded-xl overflow-auto shadow-sm">
                             {json1 ? (
                                 <JSONTreeViewer json={json1} />
                             ) : (
-                                <div className="text-gray-400 text-center mt-16">
+                                <div className="text-gray-500 text-center mt-16">
                                     <div className="text-4xl mb-2">📄</div>
                                     <p>No JSON 1 data</p>
                                 </div>
@@ -125,12 +125,12 @@ export const JSONComparer = ({ json1, json2, className }: JSONComparerProps) => 
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-gray-300 bg-purple-600/20 px-3 py-1 rounded">JSON 2 - Tree Structure</h4>
-                        <div className="w-full h-[350px] p-4 bg-gray-900/40 border border-gray-700/50 rounded-xl overflow-auto backdrop-blur-sm">
+                        <h4 className="text-sm font-medium text-gray-700 bg-purple-100 text-purple-700 px-3 py-1 rounded-xl">JSON 2 - Tree Structure</h4>
+                        <div className="w-full h-[350px] p-4 bg-white border border-gray-200 rounded-xl overflow-auto shadow-sm">
                             {json2 ? (
                                 <JSONTreeViewer json={json2} />
                             ) : (
-                                <div className="text-gray-400 text-center mt-16">
+                                <div className="text-gray-500 text-center mt-16">
                                     <div className="text-4xl mb-2">📄</div>
                                     <p>No JSON 2 data</p>
                                 </div>
@@ -142,11 +142,11 @@ export const JSONComparer = ({ json1, json2, className }: JSONComparerProps) => 
 
             {/* Overall Result */}
             {diffs.length > 0 && (
-                <div className="mt-4 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50 text-center">
+                <div className="mt-4 p-3 bg-gray-50 rounded-xl border border-gray-200 text-center shadow-sm">
                     {summary.added === 0 && summary.removed === 0 ? (
-                        <span className="text-green-400 text-lg">✅ JSONs are identical</span>
+                        <span className="text-emerald-600 text-lg font-medium">✅ JSONs are identical</span>
                     ) : (
-                        <span className="text-yellow-400 text-lg">❌ JSONs are different</span>
+                        <span className="text-yellow-600 text-lg font-medium">❌ JSONs are different</span>
                     )}
                 </div>
             )}
