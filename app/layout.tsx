@@ -1,7 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "./components/ui/toast-provider";
+import { ThemeProvider } from "./components/theme-provider";
+import { ThemeScript } from "./components/theme-script";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
 const inter = Inter({
@@ -17,10 +19,10 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL('https://jsonic.ratnesh-maurya.com'),
   title: {
-    default: "JSONic - Lightweight JSON Utility",
+    default: "JSONic - Free Online JSON Formatter, Validator & Converter",
     template: "%s | JSONic"
   },
-  description: "A powerful and lightweight utility designed to simplify working with JSON data. Format, validate, compare, and analyze JSON with our intelligent tools.",
+  description: "Free online JSON tools: format, validate, minify, compare, and convert JSON. JSON to TypeScript & Go types. JSONPath queries. Interactive tree view. No sign-up required.",
   keywords: [
     "JSON",
     "JSON formatter",
@@ -32,11 +34,17 @@ export const metadata: Metadata = {
     "JSON minifier",
     "JSONPath",
     "JSON to TypeScript",
+    "JSON to Go",
     "JSON tools",
     "web utility",
     "developer tools",
-    "online JSON editor"
+    "online JSON editor",
+    "free JSON formatter online",
+    "JSON beautifier"
   ],
+  alternates: {
+    canonical: "https://jsonic.ratnesh-maurya.com",
+  },
   authors: [{ name: "Ratnesh Maurya", url: "https://www.ratnesh-maurya.com/" }],
   creator: "Ratnesh Maurya",
   publisher: "JSONic",
@@ -55,8 +63,8 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: 'https://jsonic.ratnesh-maurya.com',
-    title: 'JSONic - Lightweight JSON Utility',
-    description: 'A powerful and lightweight utility designed to simplify working with JSON data. Format, validate, compare, and analyze JSON with our intelligent tools.',
+    title: 'JSONic - Free Online JSON Formatter, Validator & Converter',
+    description: 'Free online JSON tools: format, validate, minify, compare, and convert JSON. JSON to TypeScript & Go. JSONPath. Interactive tree view.',
     siteName: 'JSONic',
     images: [
       {
@@ -70,8 +78,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'JSONic - Lightweight JSON Utility',
-    description: 'A powerful and lightweight utility designed to simplify working with JSON data. Format, validate, compare, and analyze JSON with our intelligent tools.',
+    title: 'JSONic - Free Online JSON Formatter, Validator & Converter',
+    description: 'Free online JSON tools: format, validate, minify, compare, convert. JSON to TypeScript & Go. JSONPath. Interactive tree view.',
     creator: '@ratnesh_maurya_',
     images: ['/favicon.svg'],
   },
@@ -89,9 +97,20 @@ export const metadata: Metadata = {
     shortcut: '/favicon.svg',
   },
   other: {
-    'msapplication-TileColor': '#667eea',
-    'theme-color': '#667eea',
+    'msapplication-TileColor': '#4f46e5',
+    'theme-color': '#4f46e5',
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#4f46e5" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0f" },
+  ],
 };
 
 export default function RootLayout({
@@ -100,13 +119,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} antialiased bg-[#fafafa] text-[#0a0a0a]`}
+        className={`${inter.variable} ${jetbrainsMono.variable} antialiased bg-[var(--background)] text-[var(--foreground)] transition-colors duration-300`}
       >
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <ThemeScript />
+        <ThemeProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </ThemeProvider>
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA4_ID || ""} />
       </body>
     </html>

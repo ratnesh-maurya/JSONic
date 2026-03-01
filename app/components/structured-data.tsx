@@ -36,6 +36,7 @@ export const StructuredData = () => {
                     "JSON Minification and Compression",
                     "JSONPath Query Execution",
                     "JSON to TypeScript Type Generation",
+                    "JSON to Go Struct Generation",
                     "Real-time JSON Processing"
                 ],
                 "screenshot": "https://jsonic.ratnesh-maurya.com/favicon.svg"
@@ -79,6 +80,21 @@ export const StructuredData = () => {
                     "name": "Ratnesh Maurya",
                     "url": "https://www.ratnesh-maurya.com/"
                 }
+            },
+            {
+                "@type": "ItemList",
+                "name": "JSONic Tools",
+                "description": "Collection of JSON utility tools",
+                "numberOfItems": 7,
+                "itemListElement": [
+                    { "@type": "ListItem", "position": 1, "name": "JSON Tree View" },
+                    { "@type": "ListItem", "position": 2, "name": "JSON Comparer" },
+                    { "@type": "ListItem", "position": 3, "name": "JSON Validator" },
+                    { "@type": "ListItem", "position": 4, "name": "JSON Formatter" },
+                    { "@type": "ListItem", "position": 5, "name": "JSON Compressor" },
+                    { "@type": "ListItem", "position": 6, "name": "JSONPath Query" },
+                    { "@type": "ListItem", "position": 7, "name": "JSON to Go/TypeScript Types" }
+                ]
             },
             {
                 "@type": "SoftwareApplication",

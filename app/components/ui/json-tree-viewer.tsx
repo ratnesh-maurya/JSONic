@@ -37,18 +37,18 @@ const TreeNode = ({ data, path, level, isExpanded, onToggle }: TreeNodeProps) =>
     };
 
     const getValueColor = (value: unknown) => {
-        if (typeof value === "string") return "text-emerald-600";
-        if (typeof value === "number") return "text-violet-600 font-medium";
-        if (typeof value === "boolean") return "text-red-600 font-semibold";
-        if (value === null) return "text-gray-500 font-semibold italic";
-        return "text-gray-900";
+        if (typeof value === "string") return "text-emerald-600 dark:text-emerald-400";
+        if (typeof value === "number") return "text-violet-600 dark:text-violet-400 font-medium";
+        if (typeof value === "boolean") return "text-red-600 dark:text-red-400 font-semibold";
+        if (value === null) return "text-gray-500 dark:text-gray-400 font-semibold italic";
+        return "text-gray-900 dark:text-gray-100";
     };
 
     if (hasChildren) {
         return (
             <div className="relative">
                 <div
-                    className="group flex items-center cursor-pointer hover:bg-gray-100 rounded-md p-1 transition-all duration-200"
+                    className="group flex items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-md p-1 transition-all duration-200"
                     onClick={(e) => {
                         e.stopPropagation();
                         onToggle(path);
@@ -63,7 +63,7 @@ const TreeNode = ({ data, path, level, isExpanded, onToggle }: TreeNodeProps) =>
                     </span>
                     <span className="text-purple-600 font-semibold text-md select-none">{isArray ? "[" : "{"}</span>
                     {!expanded && (
-                        <span className="text-gray-500 ml-2 text-xs italic bg-gray-100 px-2 py-0.5 rounded-full select-none">
+                        <span className="text-gray-500 dark:text-gray-400 ml-2 text-xs italic bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full select-none">
                             {childrenCount} {isArray ? "items" : "props"}
                         </span>
                     )}
@@ -83,7 +83,7 @@ const TreeNode = ({ data, path, level, isExpanded, onToggle }: TreeNodeProps) =>
                                         e.stopPropagation();
                                         copyToClipboard(JSON.stringify(data, null, 2), "Value copied!");
                                     }}
-                                    className="px-2 py-0.5 text-xs rounded-xl hover:bg-gray-200 bg-white border border-gray-300 transition-colors cursor-pointer text-gray-700 font-medium"
+                                    className="px-2 py-0.5 text-xs rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 transition-colors cursor-pointer text-gray-700 dark:text-gray-300 font-medium"
                                     title="Copy value"
                                 >
                                     Copy
@@ -94,11 +94,11 @@ const TreeNode = ({ data, path, level, isExpanded, onToggle }: TreeNodeProps) =>
                 </div>
 
                 {expanded && (
-                    <div className="ml-4 border-l-2 border-gray-200 pl-4 mt-1">
+                    <div className="ml-4 border-l-2 border-gray-200 dark:border-gray-600 pl-4 mt-1">
                         {Object.entries(data).map(([key, value]) => (
                             <div key={`${path}.${key}`} className="flex items-start my-1 group/item">
-                                <span className="text-sky-600 font-medium mr-2 text-xs select-none">&quot;{key}&quot;</span>
-                                <span className="text-gray-600 mr-2 font-bold select-none">:</span>
+                                <span className="text-sky-600 dark:text-sky-400 font-medium mr-2 text-xs select-none">&quot;{key}&quot;</span>
+                                <span className="text-gray-600 dark:text-gray-400 mr-2 font-bold select-none">:</span>
                                 <div className="flex-1">
                                     <TreeNode
                                         data={value}
@@ -138,7 +138,7 @@ const TreeNode = ({ data, path, level, isExpanded, onToggle }: TreeNodeProps) =>
                     >
                         <button
                             onClick={() => copyToClipboard(path, "JSONPath copied!")}
-                            className="px-2 py-0.5 text-xs rounded hover:bg-gray-600/50 bg-gray-700/50 border border-gray-600/50 cursor-pointer"
+                            className="px-2 py-0.5 text-xs rounded bg-gray-200/80 dark:bg-gray-600/80 hover:bg-gray-300/80 dark:hover:bg-gray-500/80 border border-gray-300 dark:border-gray-500 cursor-pointer text-gray-800 dark:text-gray-200 font-medium"
                             title="Copy path"
                         >
                             Path

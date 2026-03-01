@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next'
- 
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'JSONic - Lightweight JSON Utility',
@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'A powerful and lightweight utility designed to simplify working with JSON data. Format, validate, compare, and analyze JSON with our intelligent tools.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#0f0f23',
-    theme_color: '#0f0f23',
+  background_color: '#0a0a0f',
+  theme_color: '#4f46e5',
     orientation: 'portrait-primary',
     categories: ['developer', 'utilities', 'productivity'],
     icons: [

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Use class-based dark mode so theme toggle works (not media query) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #fafafa;
   --foreground: #0a0a0a;
@@ -15,6 +18,21 @@
   --input: #ffffff;
   --ring: #6366f1;
   --radius: 0.75rem;
+  --card: #ffffff;
+  --card-border: rgba(0, 0, 0, 0.08);
+}
+
+.dark {
+  --background: #0a0a0f;
+  --foreground: #fafafa;
+  --secondary: #1a1a24;
+  --secondary-foreground: #fafafa;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --border: #27272a;
+  --input: #18181b;
+  --card: rgba(24, 24, 27, 0.8);
+  --card-border: rgba(255, 255, 255, 0.08);
 }
 
 @theme inline {
@@ -47,6 +65,18 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Light theme: ensure background and surfaces stay light */
+:root:not(.dark) body {
+  background: #fafafa;
+}
+
+/* Mobile: safe area for notched devices */
+@supports (padding: env(safe-area-inset-top)) {
+  .safe-area-inset-top {
+    padding-top: calc(1rem + env(safe-area-inset-top));
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -66,9 +96,12 @@ body {
   background: rgba(0, 0, 0, 0.25);
 }
 
-/* Smooth transitions */
-* {
-  transition: all 0.2s ease-in-out;
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* Code highlighting */
@@ -91,3 +124,9 @@ body {
 .json-null {
   color: #6b7280;
 }
+
+.dark .json-key { color: #38bdf8; }
+.dark .json-string { color: #34d399; }
+.dark .json-number { color: #a78bfa; }
+.dark .json-boolean { color: #f87171; }
+.dark .json-null { color: #9ca3af; }

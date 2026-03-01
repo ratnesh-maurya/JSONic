@@ -111,19 +111,19 @@ export const JSONHighlighter = ({ json, className }: JSONHighlighterProps) => {
     const getTokenStyle = (token: JSONToken) => {
         switch (token.type) {
             case 'key':
-                return 'text-sky-600 font-medium';
+                return 'text-sky-600 dark:text-sky-400 font-medium';
             case 'string':
-                return 'text-emerald-600';
+                return 'text-emerald-600 dark:text-emerald-400';
             case 'number':
-                return 'text-violet-600 font-medium';
+                return 'text-violet-600 dark:text-violet-400 font-medium';
             case 'boolean':
-                return 'text-red-600 font-semibold';
+                return 'text-red-600 dark:text-red-400 font-semibold';
             case 'null':
-                return 'text-gray-500 font-semibold';
+                return 'text-gray-500 dark:text-gray-400 font-semibold';
             case 'punctuation':
-                return 'text-gray-700';
+                return 'text-gray-700 dark:text-gray-300';
             default:
-                return 'text-gray-900';
+                return 'text-gray-900 dark:text-gray-100';
         }
     };
 

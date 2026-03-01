@@ -1,4 +1,5 @@
 "use client";
+
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import React, { useRef, useState, useEffect } from "react";
@@ -70,7 +71,9 @@ export const BackgroundBeamsWithCollision = ({
         <div
             ref={parentRef}
             className={cn(
-                "fixed inset-0 bg-gradient-to-b from-[#fafafa] via-[#f5f5f5] to-[#fafafa] relative flex items-center w-full justify-center overflow-hidden",
+                "fixed inset-0 relative flex items-center w-full justify-center overflow-hidden transition-colors duration-500",
+                "bg-gradient-to-b from-[#fafafa] via-[#f0f0f0] to-[#fafafa]",
+                "dark:from-[#0a0a0f] dark:via-[#0f0f18] dark:to-[#0a0a0f]",
                 className
             )}
         >
@@ -86,12 +89,13 @@ export const BackgroundBeamsWithCollision = ({
             {children}
             <div
                 ref={containerRef}
-                className="absolute bottom-0 bg-white/50 w-full inset-x-0 pointer-events-none backdrop-blur-sm"
+                className="absolute bottom-0 w-full inset-x-0 pointer-events-none backdrop-blur-sm bg-white/70 dark:bg-neutral-900/60 transition-colors duration-500"
             ></div>
         </div>
     );
 };
 
+/* Beam reset on collision removed to prevent flicker - animation loops naturally */
 const CollisionMechanism = React.forwardRef<
     HTMLDivElement,
     {
@@ -109,7 +113,7 @@ const CollisionMechanism = React.forwardRef<
             repeatDelay?: number;
         };
     }
->(({ parentRef, containerRef, beamOptions = {} }, ref) => {
+>(({ parentRef, containerRef, beamOptions = {} }) => {
     const beamRef = useRef<HTMLDivElement>(null);
     const [collision, setCollision] = useState<{
         detected: boolean;
@@ -118,7 +122,6 @@ const CollisionMechanism = React.forwardRef<
         detected: false,
         coordinates: null,
     });
-    const [beamKey, setBeamKey] = useState(0);
     const [cycleCollisionDetected, setCycleCollisionDetected] = useState(false);
 
     useEffect(() => {
@@ -160,18 +163,13 @@ const CollisionMechanism = React.forwardRef<
             setTimeout(() => {
                 setCollision({ detected: false, coordinates: null });
                 setCycleCollisionDetected(false);
-            }, 2000);
-
-            setTimeout(() => {
-                setBeamKey((prevKey) => prevKey + 1);
-            }, 2000);
+            }, 1500);
         }
     }, [collision]);
 
     return (
         <>
             <motion.div
-                key={beamKey}
                 ref={beamRef}
                 animate="animate"
                 initial={{
@@ -195,7 +193,9 @@ const CollisionMechanism = React.forwardRef<
                     repeatDelay: beamOptions.repeatDelay || 0,
                 }}
                 className={cn(
-                    "absolute left-0 top-20 m-auto h-14 w-px rounded-full bg-gradient-to-t from-indigo-300/40 via-purple-300/40 to-transparent",
+                    "absolute left-0 top-20 m-auto h-14 w-px rounded-full",
+                    "bg-gradient-to-t from-indigo-300/40 via-purple-300/40 to-transparent",
+                    "dark:from-indigo-500/50 dark:via-purple-500/50 dark:to-transparent",
                     beamOptions.className
                 )}
             />
@@ -234,7 +234,7 @@ const Explosion = ({ ...props }: React.HTMLProps<HTMLDivElement>) => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 1.5, ease: "easeOut" }}
-                className="absolute -inset-x-10 top-0 m-auto h-2 w-10 rounded-full bg-gradient-to-r from-transparent via-indigo-300/60 to-transparent blur-sm"
+                className="absolute -inset-x-10 top-0 m-auto h-2 w-10 rounded-full bg-gradient-to-r from-transparent via-indigo-300/60 to-transparent dark:via-indigo-500/60 blur-sm"
             ></motion.div>
             {spans.map((span) => (
                 <motion.span
@@ -246,7 +246,7 @@ const Explosion = ({ ...props }: React.HTMLProps<HTMLDivElement>) => {
                         opacity: 0,
                     }}
                     transition={{ duration: Math.random() * 1.5 + 0.5, ease: "easeOut" }}
-                    className="absolute h-1 w-1 rounded-full bg-gradient-to-b from-indigo-300/60 to-purple-300/60"
+                    className="absolute h-1 w-1 rounded-full bg-gradient-to-b from-indigo-300/60 to-purple-300/60 dark:from-indigo-500/60 dark:to-purple-500/60"
                 />
             ))}
         </div>
