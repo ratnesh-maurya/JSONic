@@ -40,14 +40,20 @@ export const metadata: Metadata = {
     "developer tools",
     "online JSON editor",
     "free JSON formatter online",
-    "JSON beautifier"
+    "JSON beautifier",
+    "Ratnesh Maurya",
+    "ratnesh-maurya.com",
+    "JSON tree visualization",
+    "JSON type distribution"
   ],
   alternates: {
     canonical: "https://jsonic.ratnesh-maurya.com",
   },
-  authors: [{ name: "Ratnesh Maurya", url: "https://www.ratnesh-maurya.com/" }],
+  authors: [
+    { name: "Ratnesh Maurya", url: "https://ratnesh-maurya.com" },
+  ],
   creator: "Ratnesh Maurya",
-  publisher: "JSONic",
+  publisher: "Ratnesh Maurya",
   robots: {
     index: true,
     follow: true,
@@ -68,11 +74,11 @@ export const metadata: Metadata = {
     siteName: 'JSONic',
     images: [
       {
-        url: '/favicon.svg',
-        width: 1200,
-        height: 630,
-        alt: 'JSONic - Lightweight JSON Utility',
-        type: 'image/svg+xml',
+        url: '/og.png',
+        width: 1024,
+        height: 576,
+        alt: 'JSONic - JSON tools interface',
+        type: 'image/png',
       }
     ],
   },
@@ -81,7 +87,7 @@ export const metadata: Metadata = {
     title: 'JSONic - Free Online JSON Formatter, Validator & Converter',
     description: 'Free online JSON tools: format, validate, minify, compare, convert. JSON to TypeScript & Go. JSONPath. Interactive tree view.',
     creator: '@ratnesh_maurya_',
-    images: ['/favicon.svg'],
+    images: ['/og.png'],
   },
   verification: {
     google: 'your-google-verification-code',
@@ -90,15 +96,22 @@ export const metadata: Metadata = {
   classification: 'Web Utility',
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-      { url: '/icon', type: 'image/png', sizes: '32x32' }
+      { url: '/favicon/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/favicon/favicon-16x16.png', type: 'image/png', sizes: '16x16' },
+      { url: '/favicon/favicon-96x96.png', type: 'image/png', sizes: '96x96' },
+      { url: '/favicon/favicon.ico', type: 'image/x-icon' },
     ],
-    apple: '/apple-icon',
-    shortcut: '/favicon.svg',
+    apple: [
+      { url: '/favicon/apple-icon-180x180.png', sizes: '180x180', type: 'image/png' },
+    ],
+    shortcut: ['/favicon/favicon.ico'],
   },
   other: {
     'msapplication-TileColor': '#4f46e5',
     'theme-color': '#4f46e5',
+    'author': 'Ratnesh Maurya',
+    'profile:username': 'ratnesh-maurya',
+    'og:see_also': 'https://ratnesh-maurya.com',
   },
 };
 

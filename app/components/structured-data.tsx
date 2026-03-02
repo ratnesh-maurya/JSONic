@@ -5,6 +5,32 @@ export const StructuredData = () => {
         "@context": "https://schema.org",
         "@graph": [
             {
+                "@type": "Person",
+                "@id": "https://ratnesh-maurya.com/#person",
+                "name": "Ratnesh Maurya",
+                "url": "https://ratnesh-maurya.com",
+                "sameAs": [
+                    "https://ratnesh-maurya.com",
+                    "https://blog.ratnesh-maurya.com",
+                    "https://github.com/ratnesh-maurya",
+                    "https://x.com/ratnesh_maurya_"
+                ],
+                "mainEntityOfPage": {
+                    "@type": "WebPage",
+                    "@id": "https://ratnesh-maurya.com"
+                },
+                "worksFor": {
+                    "@type": "Organization",
+                    "name": "Ratnesh Maurya"
+                },
+                "knowsAbout": ["TypeScript", "Go", "React", "Next.js", "JSON", "Web Development"],
+                "hasCredential": {
+                    "@type": "CreativeWork",
+                    "name": "Technical Blog",
+                    "url": "https://blog.ratnesh-maurya.com"
+                }
+            },
+            {
                 "@type": "WebApplication",
                 "@id": "https://jsonic.ratnesh-maurya.com/#webapp",
                 "name": "JSONic",
@@ -19,27 +45,29 @@ export const StructuredData = () => {
                     "priceCurrency": "USD",
                     "availability": "https://schema.org/InStock"
                 },
+                "author": {
+                    "@id": "https://ratnesh-maurya.com/#person"
+                },
                 "creator": {
-                    "@type": "Person",
-                    "name": "Ratnesh Maurya",
-                    "url": "https://www.ratnesh-maurya.com/",
-                    "sameAs": [
-                        "https://github.com/ratnesh-maurya",
-                        "https://x.com/ratnesh_maurya_"
-                    ]
+                    "@id": "https://ratnesh-maurya.com/#person"
                 },
                 "featureList": [
                     "JSON Formatting and Pretty Printing",
                     "JSON Validation with Error Reporting",
                     "JSON Comparison and Diff Analysis",
                     "Interactive JSON Tree View",
+                    "JSON Type Distribution Chart",
                     "JSON Minification and Compression",
                     "JSONPath Query Execution",
                     "JSON to TypeScript Type Generation",
                     "JSON to Go Struct Generation",
                     "Real-time JSON Processing"
                 ],
-                "screenshot": "https://jsonic.ratnesh-maurya.com/favicon.svg"
+                "screenshot": "https://jsonic.ratnesh-maurya.com/og.png",
+                "relatedLink": [
+                    "https://ratnesh-maurya.com",
+                    "https://blog.ratnesh-maurya.com"
+                ]
             },
             {
                 "@type": "WebSite",
@@ -48,9 +76,10 @@ export const StructuredData = () => {
                 "name": "JSONic",
                 "description": "Lightweight JSON Utility for Developers",
                 "publisher": {
-                    "@type": "Person",
-                    "name": "Ratnesh Maurya",
-                    "url": "https://www.ratnesh-maurya.com/"
+                    "@id": "https://ratnesh-maurya.com/#person"
+                },
+                "author": {
+                    "@id": "https://ratnesh-maurya.com/#person"
                 },
                 "potentialAction": {
                     "@type": "SearchAction",
@@ -68,32 +97,30 @@ export const StructuredData = () => {
                 "url": "https://jsonic.ratnesh-maurya.com",
                 "logo": {
                     "@type": "ImageObject",
-                    "url": "https://jsonic.ratnesh-maurya.com/favicon.svg",
-                    "width": 1200,
-                    "height": 630
+                    "url": "https://jsonic.ratnesh-maurya.com/favicon/android-icon-192x192.png",
+                    "width": 192,
+                    "height": 192
                 },
                 "sameAs": [
                     "https://github.com/ratnesh-maurya/JSONic"
                 ],
                 "founder": {
-                    "@type": "Person",
-                    "name": "Ratnesh Maurya",
-                    "url": "https://www.ratnesh-maurya.com/"
+                    "@id": "https://ratnesh-maurya.com/#person"
                 }
             },
             {
                 "@type": "ItemList",
                 "name": "JSONic Tools",
-                "description": "Collection of JSON utility tools",
+                "description": "Collection of JSON utility tools by Ratnesh Maurya",
                 "numberOfItems": 7,
                 "itemListElement": [
-                    { "@type": "ListItem", "position": 1, "name": "JSON Tree View" },
-                    { "@type": "ListItem", "position": 2, "name": "JSON Comparer" },
-                    { "@type": "ListItem", "position": 3, "name": "JSON Validator" },
-                    { "@type": "ListItem", "position": 4, "name": "JSON Formatter" },
-                    { "@type": "ListItem", "position": 5, "name": "JSON Compressor" },
-                    { "@type": "ListItem", "position": 6, "name": "JSONPath Query" },
-                    { "@type": "ListItem", "position": 7, "name": "JSON to Go/TypeScript Types" }
+                    { "@type": "ListItem", "position": 1, "name": "JSON Tree View", "url": "https://jsonic.ratnesh-maurya.com/#tree-view" },
+                    { "@type": "ListItem", "position": 2, "name": "JSON Comparer", "url": "https://jsonic.ratnesh-maurya.com/#comparer" },
+                    { "@type": "ListItem", "position": 3, "name": "JSON Validator", "url": "https://jsonic.ratnesh-maurya.com/#validator" },
+                    { "@type": "ListItem", "position": 4, "name": "JSON Formatter", "url": "https://jsonic.ratnesh-maurya.com/#formatter" },
+                    { "@type": "ListItem", "position": 5, "name": "JSON Compressor", "url": "https://jsonic.ratnesh-maurya.com/#compressor" },
+                    { "@type": "ListItem", "position": 6, "name": "JSONPath Query", "url": "https://jsonic.ratnesh-maurya.com/#jsonpath" },
+                    { "@type": "ListItem", "position": 7, "name": "JSON to Go/TypeScript Types", "url": "https://jsonic.ratnesh-maurya.com/#types" }
                 ]
             },
             {
@@ -106,9 +133,7 @@ export const StructuredData = () => {
                 "softwareVersion": "1.0.0",
                 "datePublished": "2024-12-19",
                 "author": {
-                    "@type": "Person",
-                    "name": "Ratnesh Maurya",
-                    "url": "https://www.ratnesh-maurya.com/"
+                    "@id": "https://ratnesh-maurya.com/#person"
                 },
                 "programmingLanguage": [
                     "TypeScript",
@@ -119,6 +144,29 @@ export const StructuredData = () => {
                 "requirements": "Modern web browser with JavaScript enabled",
                 "isAccessibleForFree": true,
                 "license": "https://opensource.org/licenses/MIT"
+            },
+            {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                    {
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "Ratnesh Maurya – Portfolio",
+                        "item": "https://ratnesh-maurya.com"
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Blog",
+                        "item": "https://blog.ratnesh-maurya.com"
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "JSONic",
+                        "item": "https://jsonic.ratnesh-maurya.com"
+                    }
+                ]
             }
         ]
     };

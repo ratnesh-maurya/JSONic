@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "./toast-provider";
 
@@ -12,23 +12,42 @@ interface TreeNodeProps {
     onToggle: (path: string) => void;
 }
 
+/* Small icon buttons — rendered absolutely so they never shift layout */
+function CopyIcon() {
+    return (
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+    );
+}
+
+function PathIcon() {
+    return (
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+        </svg>
+    );
+}
+
 const TreeNode = ({ data, path, level, isExpanded, onToggle }: TreeNodeProps) => {
     const { showToast } = useToast();
-    const [isHovered, setIsHovered] = useState(false);
     const isObject = typeof data === 'object' && data !== null && !Array.isArray(data);
     const isArray = Array.isArray(data);
     const hasChildren = isObject || isArray;
-    const childrenCount = hasChildren ? Object.keys(data).length : 0;
+    const childrenCount = hasChildren ? Object.keys(data as object).length : 0;
     const expanded = isExpanded(path);
 
-    const copyToClipboard = async (text: string, message: string) => {
+    const copyToClipboard = useCallback(async (text: string, message: string, e: React.MouseEvent) => {
+        e.stopPropagation();
         try {
             await navigator.clipboard.writeText(text);
-            showToast(message, 'success', 2500);
-        } catch (_error) {
-            showToast("Failed to copy to clipboard", 'error', 3000);
+            showToast(message, 'success', 2000);
+        } catch {
+            showToast("Failed to copy", 'error', 2500);
         }
-    };
+    }, [showToast]);
 
     const getValueDisplay = (value: unknown) => {
         if (typeof value === "string") return `"${value}"`;
@@ -47,105 +66,91 @@ const TreeNode = ({ data, path, level, isExpanded, onToggle }: TreeNodeProps) =>
     if (hasChildren) {
         return (
             <div className="relative">
+                {/* group hover shows the copy icon absolutely — no layout shift */}
                 <div
-                    className="group flex items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-md p-1 transition-all duration-200"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onToggle(path);
-                    }}
-                    onMouseEnter={() => setIsHovered(true)}
-                    onMouseLeave={() => setIsHovered(false)}
+                    className="group relative flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/40 rounded-md py-0.5 pr-8 transition-colors duration-100"
+                    onClick={(e) => { e.stopPropagation(); onToggle(path); }}
                 >
-                    <span
-                        className={`text-indigo-600 mr-2 text-xs w-4 select-none transition-transform duration-100 ${expanded ? 'rotate-90' : ''}`}
-                    >
+                    <span className={`text-indigo-500 dark:text-indigo-400 mr-1.5 text-[10px] w-3 select-none transition-transform duration-150 inline-block ${expanded ? 'rotate-90' : ''}`}>
                         ▶
                     </span>
-                    <span className="text-purple-600 font-semibold text-md select-none">{isArray ? "[" : "{"}</span>
+                    <span className="text-purple-600 dark:text-purple-400 font-semibold select-none">{isArray ? "[" : "{"}</span>
                     {!expanded && (
-                        <span className="text-gray-500 dark:text-gray-400 ml-2 text-xs italic bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full select-none">
-                            {childrenCount} {isArray ? "items" : "props"}
+                        <span className="text-gray-400 dark:text-gray-500 ml-1.5 text-[11px] italic bg-gray-100 dark:bg-gray-700/60 px-1.5 py-0.5 rounded-full select-none leading-none">
+                            {childrenCount} {isArray ? "item" : "prop"}{childrenCount !== 1 ? "s" : ""}
                         </span>
                     )}
-                    {!expanded && <span className="text-purple-600 ml-1 font-semibold text-md select-none">{isArray ? "]" : "}"}</span>}
+                    {!expanded && <span className="text-purple-600 dark:text-purple-400 ml-1 font-semibold select-none">{isArray ? "]" : "}"}</span>}
 
-                    <AnimatePresence>
-                        {isHovered && !expanded && (
-                            <motion.div
-                                className="flex items-center space-x-1 ml-auto pl-2"
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -10 }}
-                                transition={{ duration: 0.15 }}
-                            >
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        copyToClipboard(JSON.stringify(data, null, 2), "Value copied!");
-                                    }}
-                                    className="px-2 py-0.5 text-xs rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 transition-colors cursor-pointer text-gray-700 dark:text-gray-300 font-medium"
-                                    title="Copy value"
-                                >
-                                    Copy
-                                </button>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    {/* Absolutely positioned — never shifts layout */}
+                    <button
+                        onClick={(e) => copyToClipboard(JSON.stringify(data, null, 2), "Copied!", e)}
+                        title="Copy value"
+                        className="absolute right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-pointer"
+                    >
+                        <CopyIcon />
+                    </button>
                 </div>
 
-                {expanded && (
-                    <div className="ml-4 border-l-2 border-gray-200 dark:border-gray-600 pl-4 mt-1">
-                        {Object.entries(data).map(([key, value]) => (
-                            <div key={`${path}.${key}`} className="flex items-start my-1 group/item">
-                                <span className="text-sky-600 dark:text-sky-400 font-medium mr-2 text-xs select-none">&quot;{key}&quot;</span>
-                                <span className="text-gray-600 dark:text-gray-400 mr-2 font-bold select-none">:</span>
-                                <div className="flex-1">
-                                    <TreeNode
-                                        data={value}
-                                        path={isArray ? `${path}[${key}]` : `${path}.${key}`}
-                                        level={level + 1}
-                                        isExpanded={isExpanded}
-                                        onToggle={onToggle}
-                                    />
-                                </div>
+                <AnimatePresence initial={false}>
+                    {expanded && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.15, ease: "easeOut" }}
+                            className="overflow-hidden"
+                        >
+                            <div className="ml-4 border-l border-gray-200 dark:border-gray-600/60 pl-3 mt-0.5">
+                                {Object.entries(data as object).map(([key, value]) => (
+                                    <div key={`${path}.${key}`} className="flex items-start my-0.5">
+                                        <span className="text-sky-600 dark:text-sky-400 font-medium mr-1.5 text-[12px] select-none shrink-0">&quot;{key}&quot;</span>
+                                        <span className="text-gray-500 dark:text-gray-400 mr-1.5 select-none shrink-0">:</span>
+                                        <div className="flex-1 min-w-0">
+                                            <TreeNode
+                                                data={value}
+                                                path={isArray ? `${path}[${key}]` : `${path}.${key}`}
+                                                level={level + 1}
+                                                isExpanded={isExpanded}
+                                                onToggle={onToggle}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
-                )}
-                {expanded && (
-                    <div className="text-purple-600 font-bold text-md pl-1 mt-1 select-none">
-                        {isArray ? "]" : "}"}
-                    </div>
-                )}
+                            <div className="text-purple-600 dark:text-purple-400 font-semibold pl-1 mt-0.5 select-none text-sm">
+                                {isArray ? "]" : "}"}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         );
     }
 
+    /* Leaf node: copy icons absolutely positioned, zero layout shift */
     return (
-        <div
-            className="relative flex items-center group"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-        >
-            <span className={getValueColor(data)}>{getValueDisplay(data)}</span>
-            <AnimatePresence>
-                {isHovered && (
-                    <motion.div
-                        className="flex items-center space-x-1 ml-2"
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -10 }}
-                    >
-                        <button
-                            onClick={() => copyToClipboard(path, "JSONPath copied!")}
-                            className="px-2 py-0.5 text-xs rounded bg-gray-200/80 dark:bg-gray-600/80 hover:bg-gray-300/80 dark:hover:bg-gray-500/80 border border-gray-300 dark:border-gray-500 cursor-pointer text-gray-800 dark:text-gray-200 font-medium"
-                            title="Copy path"
-                        >
-                            Path
-                        </button>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+        <div className="group relative flex items-center pr-14 py-0.5">
+            <span className={`${getValueColor(data)} text-[12px] truncate max-w-[300px]`} title={getValueDisplay(data)}>
+                {getValueDisplay(data)}
+            </span>
+            {/* Absolute action bar — doesn't push content */}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                <button
+                    onClick={(e) => copyToClipboard(getValueDisplay(data), "Value copied!", e)}
+                    title="Copy value"
+                    className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-pointer"
+                >
+                    <CopyIcon />
+                </button>
+                <button
+                    onClick={(e) => copyToClipboard(path, "Path copied!", e)}
+                    title="Copy JSONPath"
+                    className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-pointer"
+                >
+                    <PathIcon />
+                </button>
+            </div>
         </div>
     );
 };
@@ -158,24 +163,20 @@ interface JSONTreeViewerProps {
 export const JSONTreeViewer = ({ json, className }: JSONTreeViewerProps) => {
     const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(["root"]));
 
-    const toggleNode = (path: string) => {
+    const toggleNode = useCallback((path: string) => {
         setExpandedNodes(prev => {
-            const newExpanded = new Set(prev);
-            if (newExpanded.has(path)) {
-                newExpanded.delete(path);
-            } else {
-                newExpanded.add(path);
-            }
-            return newExpanded;
+            const next = new Set(prev);
+            if (next.has(path)) { next.delete(path); } else { next.add(path); }
+            return next;
         });
-    };
+    }, []);
 
-    const isNodeExpanded = (path: string) => expandedNodes.has(path);
+    const isNodeExpanded = useCallback((path: string) => expandedNodes.has(path), [expandedNodes]);
 
     try {
         const data = JSON.parse(json);
         return (
-            <div className={`font-mono text-sm ${className} p-2`}>
+            <div className={`font-mono text-sm ${className ?? ""} p-1`}>
                 <TreeNode
                     data={data}
                     path="root"
@@ -187,8 +188,8 @@ export const JSONTreeViewer = ({ json, className }: JSONTreeViewerProps) => {
         );
     } catch {
         return (
-            <div className="text-red-600 p-2">
-                Invalid JSON
+            <div className="text-red-500 dark:text-red-400 p-2 text-sm">
+                ⚠ Invalid JSON
             </div>
         );
     }
