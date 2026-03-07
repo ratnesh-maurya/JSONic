@@ -1,3 +1,4 @@
+<img width="3600" height="2025" alt="screenshot-studio-1772427580106" src="https://github.com/user-attachments/assets/cd2dd703-4047-4deb-85c1-ed22c6315585" />
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
@@ -5,6 +6,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 First, run the development server:
 
 ```bash
+
 npm run dev
 # or
 yarn dev
