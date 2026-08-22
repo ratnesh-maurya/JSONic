@@ -1,57 +1,23 @@
-import { MetadataRoute } from 'next'
- 
+import type { MetadataRoute } from "next";
+import { SITE_URL, TOOLS } from "@/lib/tools";
+
+/**
+ * Real routes only. The previous sitemap listed #hash fragments, which search
+ * engines discard — every entry collapsed to the same single URL.
+ */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://jsonic.ratnesh-maurya.com'
-  const currentDate = new Date().toISOString()
-  
-  return [
-    {
-      url: baseUrl,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 1,
-    },
-    {
-      url: `${baseUrl}/#treeview`,
-      lastModified: currentDate,
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/#comparer`,
-      lastModified: currentDate,
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/#validator`,
-      lastModified: currentDate,
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/#formatter`,
-      lastModified: currentDate,
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/#compressor`,
-      lastModified: currentDate,
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/#jsonpath`,
-      lastModified: currentDate,
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/#types`,
-      lastModified: currentDate,
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-  ]
+    const lastModified = new Date();
+
+    return [
+        { url: SITE_URL, lastModified, changeFrequency: "weekly", priority: 1 },
+        ...TOOLS.map((tool) => ({
+            url: `${SITE_URL}/${tool.slug}`,
+            lastModified,
+            changeFrequency: "monthly" as const,
+            // Inspect and Format tools are the entry points most searches land on;
+            // a flat 0.8 across 28 URLs tells a crawler nothing about relative depth.
+            priority: tool.group === "Inspect" || tool.group === "Format" ? 0.9 : 0.7,
+            images: [`${SITE_URL}/${tool.slug}/opengraph-image`],
+        })),
+    ];
 }

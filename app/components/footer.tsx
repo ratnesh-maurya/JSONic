@@ -10,13 +10,13 @@ export const Footer = () => {
                             JSONic
                         </h3>
                         <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm">
-                            Lightweight and powerful JSON utility
+                            JSON tools that run entirely in your browser
                         </p>
                     </div>
 
                     <div className="flex flex-col items-center md:items-end space-y-2">
                         <p className="text-gray-600 dark:text-gray-400 text-sm">
-                            Made with ❤️ by{" "}
+                            Built by{" "}
                             <a
                                 href="https://www.ratnesh-maurya.com/"
                                 target="_blank"

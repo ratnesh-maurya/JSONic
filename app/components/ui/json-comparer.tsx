@@ -2,7 +2,19 @@
 
 import { useMemo, useState, useRef, useCallback, useEffect } from "react";
 import { diffLines } from "diff";
-import { JSONTreeViewer } from "./json-tree-viewer";
+import { CheckCircle2, GitCompareArrows } from "lucide-react";
+import { VirtualJsonTree } from "../json/virtual-json-tree";
+
+/** Parses on demand so the comparer can keep passing raw text around. */
+const TreePane = ({ json }: { json: string }) => {
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(json);
+    } catch {
+        return <div className="p-3 text-sm text-red-500 dark:text-red-400">Invalid JSON</div>;
+    }
+    return <VirtualJsonTree data={parsed} height={430} />;
+};
 import { useToast } from "./toast-provider";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -407,7 +419,7 @@ export const JSONComparer = ({ json1, json2, className }: JSONComparerProps) => 
                             JSONs are identical
                         </span>
                     ) : !isValid ? (
-                        <span>⚠ One or both inputs contain invalid JSON</span>
+                        <span>One or both inputs contain invalid JSON</span>
                     ) : summary.total === 0 && !json1.trim() ? (
                         <span className="text-gray-400 dark:text-gray-500">Enter JSON in both fields above to compare</span>
                     ) : (
@@ -451,14 +463,14 @@ export const JSONComparer = ({ json1, json2, className }: JSONComparerProps) => 
             {viewMode === "structural" && (
                 <div className="flex flex-col gap-1.5 h-[420px] md:h-[500px] overflow-y-auto pr-0.5 scroll-smooth">
                     {structDiffs.length === 0 && json1.trim() && json2.trim() && isValid ? (
-                        <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                            <div className="text-5xl mb-3">🎉</div>
-                            <p className="font-medium">No differences found</p>
+                        <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-400 dark:text-gray-500">
+                            <CheckCircle2 className="h-6 w-6 text-emerald-500" aria-hidden />
+                            <p className="text-sm font-medium">No differences found</p>
                         </div>
                     ) : !json1.trim() || !json2.trim() ? (
-                        <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500 gap-2">
-                            <div className="text-5xl">🔍</div>
-                            <p className="font-medium">Enter JSON in both fields to compare</p>
+                        <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-400 dark:text-gray-500">
+                            <GitCompareArrows className="h-6 w-6" aria-hidden />
+                            <p className="text-sm font-medium">Enter JSON in both fields to compare</p>
                             <p className="text-xs">Structural view shows every path that changed</p>
                         </div>
                     ) : (
@@ -576,19 +588,19 @@ export const JSONComparer = ({ json1, json2, className }: JSONComparerProps) => 
             )}
 
             {viewMode === "tree" && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 h-[420px] md:h-[500px]">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 h-[480px]">
                     <div className="flex flex-col gap-1">
                         <div className="text-xs font-semibold px-3 py-1.5 rounded-t-xl border border-b-0 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700">JSON 1 — Tree</div>
-                        <div className="flex-1 min-h-0 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-b-xl rounded-tr-xl overflow-auto">
-                            {json1.trim() ? <JSONTreeViewer json={json1} /> : (
+                        <div className="flex-1 min-h-0 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-b-xl rounded-tr-xl overflow-hidden">
+                            {json1.trim() ? <TreePane json={json1} /> : (
                                 <div className="text-gray-400 dark:text-gray-500 text-center mt-12 text-sm">No JSON 1 data</div>
                             )}
                         </div>
                     </div>
                     <div className="flex flex-col gap-1">
                         <div className="text-xs font-semibold px-3 py-1.5 rounded-t-xl border border-b-0 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700">JSON 2 — Tree</div>
-                        <div className="flex-1 min-h-0 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-b-xl rounded-tr-xl overflow-auto">
-                            {json2.trim() ? <JSONTreeViewer json={json2} /> : (
+                        <div className="flex-1 min-h-0 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-b-xl rounded-tr-xl overflow-hidden">
+                            {json2.trim() ? <TreePane json={json2} /> : (
                                 <div className="text-gray-400 dark:text-gray-500 text-center mt-12 text-sm">No JSON 2 data</div>
                             )}
                         </div>

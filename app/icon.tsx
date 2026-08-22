@@ -17,6 +17,7 @@ export default function Icon() {
       <div
         style={{
           fontSize: 24,
+          fontWeight: 700,
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           width: '100%',
           height: '100%',
@@ -27,7 +28,7 @@ export default function Icon() {
           borderRadius: '6px',
         }}
       >
-        🔮
+        J
       </div>
     ),
     // ImageResponse options

@@ -22,17 +22,19 @@
   --card-border: rgba(0, 0, 0, 0.08);
 }
 
+/* Slate-based dark surfaces rather than near-black: reads as a considered
+   palette instead of a default, and gives borders somewhere to sit. */
 .dark {
-  --background: #0a0a0f;
-  --foreground: #fafafa;
-  --secondary: #1a1a24;
-  --secondary-foreground: #fafafa;
-  --muted: #27272a;
-  --muted-foreground: #a1a1aa;
-  --border: #27272a;
-  --input: #18181b;
-  --card: rgba(24, 24, 27, 0.8);
-  --card-border: rgba(255, 255, 255, 0.08);
+  --background: #0b0f17;
+  --foreground: #f1f5f9;
+  --secondary: #131a26;
+  --secondary-foreground: #f1f5f9;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --border: #1e293b;
+  --input: #0f172a;
+  --card: rgba(19, 26, 38, 0.85);
+  --card-border: rgba(148, 163, 184, 0.14);
 }
 
 @theme inline {
@@ -130,3 +132,93 @@ body {
 .dark .json-number { color: #a78bfa; }
 .dark .json-boolean { color: #f87171; }
 .dark .json-null { color: #9ca3af; }
+
+/* Toast entry — replaces the framer-motion spring that used to ship for this alone */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(24px) scale(0.98); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+.animate-toast-in {
+  animation: toast-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-toast-in { animation: none; }
+}
+
+
+/* ── Home page effects ────────────────────────────────────────────────
+   All CSS. The previous build shipped framer-motion plus an aurora canvas
+   component for effects like these; both were removed for a 157 KB -> 119 KB
+   first-load win, so these are rebuilt with gradients and keyframes instead. */
+
+/* Grid backdrop, faded out towards the edges with a mask */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+}
+
+:root { --grid-line: rgba(15, 23, 42, 0.06); }
+.dark { --grid-line: rgba(148, 163, 184, 0.08); }
+
+/* Two slow aurora blobs. transform/opacity only, so no layout work per frame. */
+@keyframes drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%      { transform: translate3d(6%, -4%, 0) scale(1.12); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.05); }
+  50%      { transform: translate3d(-7%, 5%, 0) scale(0.95); }
+}
+
+.aurora-a, .aurora-b {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.5;
+  will-change: transform;
+}
+.aurora-a { background: radial-gradient(circle, #6366f1 0%, transparent 70%); }
+.aurora-b { background: radial-gradient(circle, #a855f7 0%, transparent 70%); }
+
+.dark .aurora-a, .dark .aurora-b { opacity: 0.35; }
+
+/* Cursor-following card spotlight; --mx/--my are set by one delegated listener */
+.spotlight-card { position: relative; }
+.spotlight-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  background: radial-gradient(
+    260px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(99, 102, 241, 0.14),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+.spotlight-card:hover::before { opacity: 1; }
+
+/* Rotating word in the hero headline. The slot is a fixed height with
+   overflow hidden, so nothing around it reflows as the words cycle. */
+@keyframes word-cycle {
+  0%, 26%   { transform: translateY(0); }
+  33%, 59%  { transform: translateY(-33.3333%); }
+  66%, 92%  { transform: translateY(-66.6667%); }
+  100%      { transform: translateY(-100%); }
+}
+.word-slot { display: inline-block; height: 1.15em; overflow: hidden; vertical-align: bottom; }
+.word-slot > span { display: block; animation: word-cycle 7.5s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-a, .aurora-b { animation: none !important; }
+  .word-slot > span { animation: none !important; }
+  .spotlight-card::before { transition: none; }
+}

@@ -5,15 +5,20 @@ import { ToastProvider } from "./components/ui/toast-provider";
 import { ThemeProvider } from "./components/theme-provider";
 import { ThemeScript } from "./components/theme-script";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { AppShell } from "./components/shell/app-shell";
+import { Footer } from "./components/footer";
+import { siteJsonLd } from "@/lib/seo";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -72,28 +77,23 @@ export const metadata: Metadata = {
     title: 'JSONic - Free Online JSON Formatter, Validator & Converter',
     description: 'Free online JSON tools: format, validate, minify, compare, and convert JSON. JSON to TypeScript & Go. JSONPath. Interactive tree view.',
     siteName: 'JSONic',
-    images: [
-      {
-        url: '/og.png',
-        width: 1024,
-        height: 576,
-        alt: 'JSONic - JSON tools interface',
-        type: 'image/png',
-      }
-    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'JSONic - Free Online JSON Formatter, Validator & Converter',
     description: 'Free online JSON tools: format, validate, minify, compare, convert. JSON to TypeScript & Go. JSONPath. Interactive tree view.',
+    site: '@ratnesh_maurya_',
     creator: '@ratnesh_maurya_',
-    images: ['/og.png'],
   },
-  verification: {
-    google: 'your-google-verification-code',
-  },
+  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+    : undefined,
   category: 'technology',
-  classification: 'Web Utility',
+  classification: 'Developer Tools',
+  applicationName: 'JSONic',
+  referrer: 'origin-when-cross-origin',
+  formatDetection: { telephone: false, address: false, email: false },
+  appleWebApp: { capable: true, title: 'JSONic', statusBarStyle: 'black-translucent' },
   icons: {
     icon: [
       { url: '/favicon/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
@@ -133,16 +133,30 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Site-wide entities. Every page's own @graph references these by @id
+            instead of restating them, which is the shape answer engines resolve. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd()) }}
+        />
+      </head>
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased bg-[var(--background)] text-[var(--foreground)] transition-colors duration-300`}
       >
         <ThemeScript />
         <ThemeProvider>
           <ToastProvider>
-            {children}
+            <AppShell>
+              {children}
+              <Footer />
+            </AppShell>
           </ToastProvider>
         </ThemeProvider>
-        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || ""} />
+        {/* an empty gaId still injects gtag.js — skip the script entirely when unset */}
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+        )}
       </body>
     </html>
   );
