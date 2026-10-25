@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { JsonEditor } from "../json/json-editor";
 import { JSONComparer } from "../ui/json-comparer";
+import { SplitPanes } from "../ui/split-panes";
 import { COMPARE_SAMPLES } from "@/lib/json/samples";
 import { usePrefs } from "@/lib/prefs";
 import { sortObjectKeys } from "@/lib/json/core";
@@ -56,10 +57,11 @@ export function CompareWorkbench() {
                 </label>
             </div>
 
-            <div className="grid gap-3 lg:grid-cols-2">
-                <JsonEditor value={left} onChange={setLeft} height={PANEL_HEIGHT} label="Original" />
-                <JsonEditor value={right} onChange={setRight} height={PANEL_HEIGHT} label="Changed" />
-            </div>
+            <SplitPanes
+                id="compare"
+                left={<JsonEditor value={left} onChange={setLeft} height={PANEL_HEIGHT} label="Original" />}
+                right={<JsonEditor value={right} onChange={setRight} height={PANEL_HEIGHT} label="Changed" />}
+            />
 
             {left.trim() && right.trim() ? (
                 <JSONComparer json1={normalise(left)} json2={normalise(right)} />

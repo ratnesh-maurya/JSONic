@@ -66,7 +66,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, collapsedGroups, onToggl
                 aria-label="Tools"
                 className={`fixed inset-y-0 left-0 z-40 flex w-[248px] shrink-0 flex-col border-r border-gray-200 bg-white
                     transition-[width,transform] duration-200 ease-out dark:border-gray-800/80 dark:bg-[#0d1117]
-                    ${open ? "translate-x-0" : "-translate-x-full"} md:static md:translate-x-0 ${width}`}
+                    ${open ? "translate-x-0" : "-translate-x-full"} md:sticky md:top-0 md:h-dvh md:self-start md:translate-x-0 ${width}`}
             >
                 <div className={`flex h-14 shrink-0 items-center border-b border-gray-200 dark:border-gray-800/80 ${collapsed ? "md:justify-center md:px-0" : "px-3"}`}>
                     <Link href="/" onClick={onClose} className="flex items-center gap-2 overflow-hidden">
