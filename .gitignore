@@ -40,3 +40,13 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .next-verify
+
+# opennext cloudflare build output
+.open-next
+.wrangler
+.dev.vars
+
+# opennext cloudflare build output
+.open-next
+.wrangler
+.dev.vars
