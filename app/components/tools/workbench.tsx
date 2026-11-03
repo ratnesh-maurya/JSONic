@@ -10,6 +10,7 @@ import { SizeReportPanel } from "./panels/size-report";
 import { JwtPanel } from "./panels/jwt-panel";
 import { ToolbarControls, BUTTON, PRIMARY } from "./toolbar-controls";
 import { useToast } from "../ui/toast-provider";
+import { SplitPanes } from "../ui/split-panes";
 import { useJsonWorker, type JobFailure } from "@/lib/json/use-json-worker";
 import { useDebounced } from "@/lib/use-debounced";
 import { EMPTY_STATS, formatBytes, sizeTier, type JsonErrorPosition, type JsonStats } from "@/lib/json/types";
@@ -22,6 +23,8 @@ import type { JwtParts } from "@/lib/json/strings";
 import type { WorkerJob } from "@/lib/json/worker-protocol";
 
 const PANEL_HEIGHT = 540;
+/** header, breadcrumb, title, toolbar and panel labels above the panels */
+const CHROME_HEIGHT = 330;
 
 export type { WorkbenchMode };
 
@@ -50,6 +53,16 @@ export function Workbench({ mode }: { mode: WorkbenchMode }) {
     const debouncedSecond = useDebounced(second, 300);
     const debouncedQuery = useDebounced(prefs.jsonPathQuery, 400);
     const tier = sizeTier(input.length);
+
+    // the tree viewer fills the window; reads happen after mount so the server render stays at the base height
+    const [panelHeight, setPanelHeight] = useState(PANEL_HEIGHT);
+    useEffect(() => {
+        if (spec.output !== "tree") return;
+        const fit = () => setPanelHeight(Math.max(PANEL_HEIGHT, window.innerHeight - CHROME_HEIGHT));
+        fit();
+        window.addEventListener("resize", fit);
+        return () => window.removeEventListener("resize", fit);
+    }, [spec.output]);
 
     // restore the last draft once, so a reload does not lose work
     useEffect(() => {
@@ -264,12 +277,15 @@ export function Workbench({ mode }: { mode: WorkbenchMode }) {
                 </Banner>
             )}
 
-            <div className="grid gap-2.5 lg:grid-cols-2">
+            <SplitPanes
+                id={mode}
+                initialRatio={spec.output === "tree" ? 0.4 : 0.5}
+                left={
                 <div className={spec.dualInput ? "grid gap-2.5" : undefined}>
                     <JsonEditor
                         value={input}
                         onChange={setInput}
-                        height={spec.dualInput ? PANEL_HEIGHT / 2 - 22 : PANEL_HEIGHT}
+                        height={spec.dualInput ? panelHeight / 2 - 22 : panelHeight}
                         label={spec.dualInput ? "Original" : "Input"}
                         placeholder={spec.placeholder}
                         errorLine={failure?.position?.line}
@@ -286,12 +302,13 @@ export function Workbench({ mode }: { mode: WorkbenchMode }) {
                         <JsonEditor
                             value={second}
                             onChange={setSecond}
-                            height={PANEL_HEIGHT / 2 - 22}
+                            height={panelHeight / 2 - 22}
                             label="Changed"
                         />
                     )}
                 </div>
-
+                }
+                right={
                 <div className="flex min-h-0 flex-col">
                     <div className="mb-1.5 flex items-center justify-between gap-2">
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -324,11 +341,11 @@ export function Workbench({ mode }: { mode: WorkbenchMode }) {
                     </div>
 
                     <div
-                        style={{ height: PANEL_HEIGHT }}
+                        style={{ height: panelHeight }}
                         className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700/80 dark:bg-gray-900/60"
                     >
                         {spec.output === "tree" && parsed !== undefined ? (
-                            <VirtualJsonTree ref={treeRef} data={parsed} height={PANEL_HEIGHT} onCopy={(t, l) => void copy(t, l)} />
+                            <VirtualJsonTree ref={treeRef} data={parsed} height={panelHeight} onCopy={(t, l) => void copy(t, l)} />
                         ) : spec.output === "report" ? (
                             <ValidatorReport failure={failure} stats={stats} suggestions={suggestions} hasInput={Boolean(input.trim())} />
                         ) : spec.output === "size" ? (
@@ -336,13 +353,14 @@ export function Workbench({ mode }: { mode: WorkbenchMode }) {
                         ) : spec.output === "jwt" ? (
                             <JwtPanel jwt={jwt} hasInput={Boolean(input.trim())} />
                         ) : output ? (
-                            <VirtualCodeView text={output} height={PANEL_HEIGHT} highlight={spec.highlightOutput ?? false} />
+                            <VirtualCodeView text={output} height={panelHeight} highlight={spec.highlightOutput ?? false} />
                         ) : (
                             <Empty label={spec.outputLabel} busy={busy} />
                         )}
                     </div>
                 </div>
-            </div>
+                }
+            />
         </div>
     );
 }

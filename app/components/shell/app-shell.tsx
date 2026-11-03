@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Menu } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Home, Menu } from "lucide-react";
 import { usePrefs } from "@/lib/prefs";
 import { ThemeToggle } from "../theme-toggle";
 import { Sidebar } from "./sidebar";
@@ -26,6 +28,7 @@ function GithubMark({ className }: { className?: string }) {
 
 export function AppShell({ children }: AppShellProps) {
     const { prefs, update, hydrated } = usePrefs();
+    const pathname = usePathname();
     const [drawerOpen, setDrawerOpen] = useState(false);
 
     const toggleCollapsed = useCallback(() => {
@@ -59,6 +62,16 @@ export function AppShell({ children }: AppShellProps) {
                     >
                         <Menu className="h-5 w-5" aria-hidden />
                     </button>
+
+                    <Link
+                        href="/"
+                        aria-label="Home"
+                        aria-current={pathname === "/" ? "page" : undefined}
+                        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                    >
+                        <Home className="h-4 w-4" aria-hidden />
+                        Home
+                    </Link>
 
                     <div className="ml-auto flex items-center gap-1.5">
                         <ThemeToggle />
